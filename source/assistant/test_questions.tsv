@@ -1,0 +1,174 @@
+net	Combien je vais avoir dans mon compte jeudi?
+net	c koi mon net
+net	ma paye est de combien cette semaine
+net	How much am I getting deposited
+net	montant final que je reçois
+net	jai eu combien au final
+net	what's the final amount I get
+net	Combien d'argent me reste-t-il une fois tout enlevé
+gross	j'ai fait combien en tout avant les impôts
+gross	quel est le total brut
+gross	what's my total before anything is taken off
+gross	brut svp
+gross	combien j'ai gagné en tout cette semaine avant les retenues
+withheld	ils m'ont enlevé combien en tout
+withheld	how much came off in total
+withheld	somme de toutes les déductions
+withheld	combien de retenues au total sur ce talon
+breakdown	pourquoi j'ai juste 800 piasses
+breakdown	ma paye est ben basse, pourquoi
+breakdown	why did I get so little this time
+breakdown	explique moi comment ils calculent mon chèque
+breakdown	je comprends rien à mon talon de paie
+breakdown	where does all my money go
+breakdown	donne-moi un résumé de ma paie
+deposit	ça rentre quel jour
+deposit	what day is the money deposited
+deposit	dans quelle banque va ma paie
+deposit	c'est quand le dépôt de ma paye
+period	ça couvre quelle semaine de travail
+period	what dates are covered by this pay
+period	je suis payé chaque semaine ou aux deux semaines
+line_amount	combien je paie pour le syndicat
+line_amount	how much union did they take
+line_amount	combien de RRQ cette semaine
+line_amount	combien d'assurance emploi
+line_amount	how much did the qpp cost me
+line_amount	combien m'a rapporté la prime de soir
+line_amount	montant de l'impôt fédéral
+line_amount	how much federal tax
+line_amount	combien de rqap
+line_amount	combien pour l'assurance collective
+line_amount	how much was my evening shift premium
+line_amount	j'ai payé combien de pension
+line_amount	combien j'ai eu de temps double
+explain	c'est quoi le RQAP
+explain	RRQ ça veut dire quoi
+explain	what does EI stand for
+explain	what is QPIP exactly
+explain	explique moi l'assurance collective
+explain	c'est quoi un TD1
+explain	pourquoi je paie le fonds humanitaire
+explain	what's a T4
+explain	ça sert à quoi le relevé 1
+explain	c'est quoi salaires assujettis
+explain	what is pensionable earnings
+explain	c'est quoi le cumul annuel
+explain	what's the humanity fund
+explain	pourquoi y'a du REER
+taxes_total	combien d'impôts j'ai payé en tout
+taxes_total	total tax this week
+taxes_total	le gouvernement me prend combien
+taxes_total	combien en impots
+tax_rate	je suis taxé à quel pourcentage
+tax_rate	quel % de ma paie va aux impôts
+tax_rate	what share of my pay goes to tax
+hours	combien d'heures ils m'ont payé
+hours	how many hours am I paid for this week
+hours	combien d'heures de temps supplémentaire j'ai fait
+hours	nombre d'heures travaillées
+hours	how many overtime hours
+rate	je suis payé combien de l'heure
+rate	what's my hourly
+rate	suis-je à la bonne classe
+rate	quel est mon échelon salarial
+rate	is my pay rate correct
+per_hour	combien je fais vraiment de l'heure après impôt
+per_hour	what do I actually make per hour after deductions
+per_hour	mon net horaire
+sick_left	il me reste combien de journées de maladie
+sick_left	how many sick days do I have left
+sick_left	pourquoi ma banque de maladie est négative
+sick_left	jpeux tu prendre une maladie
+sick_left	solde de mes congés de maladie
+sick_left	sick time remaining
+bank_left	combien d'heures j'ai dans ma banque de temps
+bank_left	how much overtime have I banked
+bank_left	ma banque de temps supp
+vacation_left	combien il me reste de vacances
+vacation_left	vacation left?
+vacation_left	mon solde de vacances est de combien
+vacation_left	how much vacation do I still have
+ytd	combien j'ai fait depuis janvier
+ytd	how much have I earned so far this year
+ytd	total d'impôt payé cette année
+ytd	combien de RRQ cette année
+ytd	mon revenu annuel à date
+maximums	quand je vais arrêter de payer de l'assurance emploi
+maximums	when will I max out QPP
+maximums	est-ce que j'ai atteint le max du RRQ
+maximums	pourquoi ma paie monte à la fin de l'année
+maximums	when does EI stop coming off
+slips	qu'est-ce qui va être sur mon T4
+slips	montant de la case 14
+slips	what will my RL-1 show
+slips	mes feuillets d'impôt
+employer	combien la compagnie met pour moi
+employer	what does my employer contribute
+employer	la part employeur de la pension
+checks	est-ce que ma paye est bonne
+checks	is there a mistake on my pay
+checks	vérifie si tout est correct
+checks	est-ce qu'il y a une erreur dans mon talon
+checks	did payroll mess up
+retro	c'est quoi le montant rétro
+retro	j'ai reçu de la rétroactivité?
+retro	why is there back pay on my stub
+compare	pourquoi j'ai eu moins que la semaine passée
+compare	what's different from my last paycheck
+compare	compare mes deux dernières paies
+compare	pourquoi mon impôt a monté depuis la dernière paie
+compare	why is my net higher this week
+compare	qu'est-ce qui a changé par rapport à l'autre talon
+compare	explique la différence entre mes deux talons
+holidays	c'est quand le prochain jour férié
+holidays	when's the next stat
+holidays	est-ce que le 26 décembre est férié
+holidays	combien de jours fériés on a
+holidays	Noël tombe quel jour
+holidays	is Good Friday a paid holiday
+vacation_rule	combien de vacances j'ai après 5 ans
+vacation_rule	how much vacation do I get with 10 years
+vacation_rule	ça prend combien d'années pour avoir 4 semaines
+vacation_rule	comment est calculée ma paie de vacances
+sick_rule	combien de congés de maladie on a par année
+sick_rule	are sick days paid out if I don't use them
+sick_rule	quand mes maladies reviennent
+overtime_rule	le samedi est-tu payé temps et demi
+overtime_rule	when do I get double time
+overtime_rule	comment le temps supplémentaire est payé
+shift_rule	la prime de nuit c'est combien
+shift_rule	how much extra for evening shift
+shift_rule	combien de plus pour travailler de soir
+wage_scale	combien gagne une classe 6 niveau C
+wage_scale	what's the rate for class 3
+wage_scale	grille des salaires
+wage_scale	si je monte en classe 8 je vais faire combien
+agreement	quand finit notre convention
+agreement	when is the next raise
+agreement	c'est quand l'augmentation
+fact	combien on a pour les bottes de sécurité
+fact	what's the meal allowance for overtime
+fact	prime d'ancienneté après 20 ans
+fact	l'assurance invalidité paie combien
+codes	que veulent dire les chiffres entre parenthèses
+codes	why are there two codes next to my hours
+codes	c'est quoi le 03 dans (03, 123)
+greeting	bonjour!
+greeting	allô
+greeting	hi
+thanks	merci bcp
+thanks	thanks a lot
+thanks	parfait, merci!
+help	tu peux m'aider avec quoi
+help	what kind of questions can you answer
+help	comment je t'utilise
+privacy	est-ce que mes infos sont envoyées sur internet
+privacy	does this upload my payslip
+privacy	qui a accès à mes données
+other	quel temps il va faire demain
+other	who won the game last night
+other	écris-moi une chanson
+other	what's the capital of france
+other	je veux commander une pizza
+other	how do I change a tire

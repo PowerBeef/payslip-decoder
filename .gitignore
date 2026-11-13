@@ -1,0 +1,6 @@
+# never commit: dependencies, local builds, the private agreement pack, or any payslip
+source/node_modules/
+source/dist/
+source/private/
+*.pdf
+__pycache__/

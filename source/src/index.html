@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
+<script>/* installed app or in-app viewer: the page is as tall as the screen and only the content scrolls (see "Full screen" in CLAUDE.md) */
+(function(){var d=document.documentElement,ua=navigator.userAgent;var iOS=/iPhone|iPad|iPod/.test(ua)||(/Macintosh/.test(ua)&&navigator.maxTouchPoints>1);var standalone=(window.matchMedia&&matchMedia('(display-mode: standalone), (display-mode: fullscreen)').matches)||navigator.standalone===true;var shell=standalone||(iOS&&!/Safari\//.test(ua))||(/Android/.test(ua)&&/; wv\)/.test(ua));d.classList.add(shell?'mode-shell':'mode-doc');if(standalone)d.classList.add('is-standalone');if(shell)d.style.setProperty('--app-h',window.innerHeight+'px');})();</script>
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#edf2f0" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0f171f" media="(prefers-color-scheme: dark)">
+<title>Décodeur de talon de paie Workday</title>
+/*HEAD*/
+<style>
+/*FONTS*/
+/*CSS*/
+</style>
+</head>
+<body>
+<div id="top-sentinel" aria-hidden="true"></div>
+<div id="sa-probe" aria-hidden="true"></div>
+<div class="app">
+  <header class="bar" id="bar"></header>
+  <nav class="tabs" id="tabs" aria-label="Views"></nav>
+  <main class="main" id="main" tabindex="-1"><noscript><p style="padding:24px">This page needs JavaScript to read your payslip. / Cette page a besoin de JavaScript pour lire votre talon de paie.</p></noscript></main>
+</div>
+<input type="file" id="file" class="sr" accept="application/pdf,.pdf" multiple tabindex="-1" aria-hidden="true">
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<div class="dropov" id="dropov" hidden></div>
+<div class="sheet-w" id="sheet" hidden></div>
+<div class="sheet-w" id="psheet" hidden></div>
+<div class="alert-w" id="alert" hidden></div>
+/*PDFJS_BLOCKS*/
+<script>
+/*APP*/
+</script>
+</body>
+</html>

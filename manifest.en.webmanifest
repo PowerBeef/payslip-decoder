@@ -1,0 +1,75 @@
+{
+  "id": "./",
+  "name": "Payslip Decoder",
+  "short_name": "Payslip",
+  "description": "Reads your Workday payslip PDF and explains every line. Everything stays on your device.",
+  "lang": "en-CA",
+  "dir": "ltr",
+  "start_url": "./#overview",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#edf2f0",
+  "theme_color": "#edf2f0",
+  "categories": [
+    "finance",
+    "productivity",
+    "utilities"
+  ],
+  "icons": [
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/maskable-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "icons/maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "screenshots/en-narrow-1.webp",
+      "sizes": "780x1688",
+      "type": "image/webp",
+      "form_factor": "narrow",
+      "label": "Your pay at a glance"
+    },
+    {
+      "src": "screenshots/en-narrow-2.webp",
+      "sizes": "780x1688",
+      "type": "image/webp",
+      "form_factor": "narrow",
+      "label": "Your pay at a glance"
+    },
+    {
+      "src": "screenshots/en-narrow-3.webp",
+      "sizes": "780x1688",
+      "type": "image/webp",
+      "form_factor": "narrow",
+      "label": "Your pay at a glance"
+    },
+    {
+      "src": "screenshots/en-wide-1.webp",
+      "sizes": "1280x800",
+      "type": "image/webp",
+      "form_factor": "wide",
+      "label": "Your pay at a glance"
+    }
+  ]
+}

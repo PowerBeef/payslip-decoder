@@ -1,0 +1,57 @@
+net	c’est combien qui va tomber dans mon compte
+net	what's the amount of my deposit this week
+net	Ma paie nette ça donne quoi?
+gross	how much did I gross this week
+gross	j’ai fait combien avant les déductions
+withheld	combien ils m’ont pogné en tout
+withheld	total amount deducted from my pay
+breakdown	explique-moi pourquoi j’ai juste ça
+breakdown	I don't get my pay, can you explain it
+taxes_total	j’ai payé combien d’impôts en tout cette paie
+taxes_total	total taxes on this check
+tax_rate	je perds quel pourcentage de ma paye en impôts
+line_amount	combien m’a coûté le dentaire
+line_amount	how much went to union dues
+line_amount	j’ai cotisé combien au RQAP
+explain	c’est quoi l’avantage imposable sur mon talon
+explain	what is EI exactly
+explain	c’est quoi le TP-1015.3
+hours	combien d’heures payées en tout
+hours	how much overtime did I do
+rate	c’est quoi mon salaire horaire de base
+rate	what's my base rate
+per_hour	what's my real hourly after taxes
+sick_left	combien de temps de maladie j’ai encore
+sick_left	any sick days left for me
+bank_left	ma banque d’heures est rendue à combien
+vacation_left	how much vacation money do I have
+maximums	quand est-ce que j’atteins le max de RRQ
+maximums	when am I done paying QPIP
+ytd	how much have I made so far in 2026
+ytd	mon impôt total depuis janvier
+slips	qu’est-ce qui va apparaître sur mon relevé 1
+slips	how much will my T4 show for income
+employer	combien la compagnie verse dans mon REER collectif
+checks	ma paie est-tu bonne
+checks	can you check if my pay is right
+retro	pourquoi j’ai de la rétro
+compare	pourquoi j’ai plus que l’autre semaine
+compare	how is this pay different from the previous one
+holidays	on a-tu congé à la fête du Travail
+holidays	how many stat holidays do we have
+vacation_rule	combien de vacances après 3 ans
+vacation_rule	how many weeks off after 15 years of service
+sick_rule	c’est quoi la règle pour les congés maladie
+overtime_rule	le temps supp le samedi c’est payé comment
+shift_rule	how much extra do I get for working nights
+wage_scale	quel est le taux de la classe 8 niveau A
+agreement	quand est-ce que la convention expire
+codes	what do the numbers in parentheses mean on my hours
+deposit	dans quelle banque ma paie est déposée
+period	quelles semaines cette paie couvre
+privacy	est-ce que quelqu’un d’autre peut voir mon talon
+help	what kind of stuff can I ask
+greeting	bonsoir
+thanks	thanks, that helps
+other	donne-moi une recette de lasagne
+other	what time is it in Paris

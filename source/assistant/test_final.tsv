@@ -1,0 +1,92 @@
+net	J’ai eu combien sur ma dernière paye?
+net	what's my take-home this time
+net	combien d’argent j’ai fait au net
+net	combien qui rentre dans mon compte cette semaine
+net	How much money landed in my account
+gross	c'est quoi mon salaire brut cette semaine
+gross	What did I earn before deductions?
+gross	mon total avant qu’ils enlèvent les impôts
+withheld	Combien on m’a retenu en tout?
+withheld	how much got taken off my pay altogether
+withheld	le total des retenues
+breakdown	Pourquoi ma paye est plus petite que d’habitude?
+breakdown	can you walk me through my payslip
+breakdown	j’comprends rien à mon talon, explique
+breakdown	where is all my money going
+taxes_total	Combien d’impôt j’ai payé cette semaine?
+taxes_total	how much income tax came off
+tax_rate	Quel pourcentage de ma paie part en impôt?
+tax_rate	what percent of my pay is withheld
+line_amount	combien pour le syndicat cette semaine
+line_amount	How much was taken for the pension plan?
+line_amount	j’ai payé combien d’assurance collective
+line_amount	how much did I pay in QPP
+line_amount	montant de la prime de nuit sur mon talon
+explain	C’est quoi le RRQ2?
+explain	what does QPIP stand for
+explain	ça veut dire quoi salaires assujettis
+explain	what is a worktag
+explain	c’est quoi le fonds humanitaire
+hours	J’ai fait combien d’heures cette semaine?
+hours	how many hours am I getting paid this week
+hours	mes heures de temps supplémentaire
+rate	C’est quoi mon taux horaire?
+rate	what's my hourly wage
+per_hour	Combien je fais de l’heure une fois tout enlevé?
+per_hour	what do I really make per hour after deductions
+sick_left	Il me reste combien de congés maladie?
+sick_left	how much sick time do I have left
+sick_left	j’ai-tu encore des journées de maladie
+bank_left	combien d’heures j’ai dans ma banque
+bank_left	how many banked hours do I have
+vacation_left	j’ai encore combien de vacances dans ma banque
+vacation_left	what's my vacation balance
+maximums	Quand est-ce que j’arrête de cotiser au RRQ?
+maximums	have I maxed out my EI yet
+maximums	quand mon net va monter à cause des maximums
+ytd	Combien j’ai gagné depuis le début de l’année?
+ytd	total earnings so far this year
+slips	Combien va être écrit sur mon T4?
+slips	what goes in box 22 of my T4
+slips	c’est quoi la case A de mon relevé 1
+employer	Combien l’employeur paie pour mes assurances?
+employer	what does the company contribute for me
+checks	Est-ce que ma paie a été bien calculée?
+checks	are there any mistakes on my payslip
+checks	y a-tu une erreur sur ma paye
+retro	C’est quoi le montant rétro sur ma paie?
+retro	why did I get back pay
+compare	ma paie a baissé de 50 $ depuis l’autre talon, pourquoi
+compare	compare this payslip with the previous one
+compare	what's different from last week
+compare	c’est quoi la différence entre mes deux talons
+holidays	le prochain congé férié tombe quand
+holidays	do we get Easter Monday off with pay
+holidays	quels sont les congés fériés de la convention
+holidays	is there a holiday coming up soon
+vacation_rule	J’ai droit à combien de semaines de vacances avec 7 ans d’ancienneté?
+vacation_rule	how much vacation do I get after 10 years
+sick_rule	Combien de jours de maladie on a par année?
+sick_rule	how many sick days does the contract give
+overtime_rule	Le temps supplémentaire est payé à combien?
+overtime_rule	when does overtime become double time
+shift_rule	C’est combien la prime de soir?
+shift_rule	how much is the night shift premium per hour
+wage_scale	le salaire d’un opérateur classe 5 niveau C
+wage_scale	what's the top rate on the wage scale
+agreement	Quand finit notre convention collective?
+agreement	tell me about my union contract
+codes	Ça veut dire quoi les chiffres entre parenthèses?
+codes	what are the numbers in brackets next to my hours
+deposit	Ma paie a été déposée quand?
+deposit	which bank account did my pay go to
+period	C’est pour quelle période cette paie?
+period	what dates does this pay cover
+privacy	Est-ce que mon talon est envoyé sur internet?
+privacy	does this app upload my payslip
+help	tu sers à quoi au juste
+help	what can you help me with
+greeting	allo toi
+thanks	merci, c’est clair
+other	C’est quoi la météo demain?
+other	who won the hockey game

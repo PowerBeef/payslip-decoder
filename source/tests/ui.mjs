@@ -1,0 +1,190 @@
+// 37 checks. usage: PAYSLIP=/path/real.pdf NOT_PAYSLIP=/path/other.pdf VARIANTS=/dir/with/week2.pdf,bad.pdf node tests/ui.mjs
+// Tests the offline build (dist/payslip-decoder.html). Keep every PDF outside the repo.
+import puppeteer from 'puppeteer-core';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const CHROME = process.env.CHROME || '/usr/bin/google-chrome';
+const R = process.env.PAYSLIP;
+const CONV = process.env.NOT_PAYSLIP;
+const VAR = process.env.VARIANTS || '/tmp/pd-variants';
+if (!R || !CONV) { console.log('Set PAYSLIP and NOT_PAYSLIP'); process.exit(1); }
+const browser = await puppeteer.launch({ executablePath: CHROME, args: ['--no-sandbox', '--allow-file-access-from-files'], headless: 'new' });
+const page = await browser.newPage();
+const errs = [];
+page.on('pageerror', (e) => errs.push('PAGEERROR ' + e.message));
+page.on('console', (m) => { if (m.type() === 'error') errs.push('console.error ' + m.text()); });
+const dl = '/tmp/pd-test-dl'; fs.rmSync(dl, { recursive: true, force: true }); fs.mkdirSync(dl, { recursive: true });
+const cdp = await page.createCDPSession(); await cdp.send('Browser.setDownloadBehavior', { behavior: 'allow', downloadPath: dl, eventsEnabled: true }); cdp.on('Browser.downloadWillBegin', (e) => console.log('   DOWNLOAD', e.suggestedFilename));
+await page.setViewport({ width: 390, height: 844, isMobile: true, hasTouch: true });
+await page.evaluateOnNewDocument(() => { try { localStorage.clear(); } catch (e) {} Object.defineProperty(navigator, 'language', { get: () => 'fr-CA' }); });
+await page.goto('file://' + ROOT + '/dist/payslip-decoder.html');
+await page.evaluate(() => document.addEventListener('click', (e) => { const t = e.target.closest('[data-act],[data-go],[data-lang]'); console.log('CLICK', t ? (t.dataset.act || t.dataset.go || t.dataset.lang) : e.target.tagName + '.' + e.target.className); }, true));
+page.on('console', (m) => { if (m.text().startsWith('CLICK')) console.log('   ', m.text()); });
+await new Promise((r) => setTimeout(r, 400));
+const ok = (name, cond) => console.log((cond ? 'PASS ' : 'FAIL ') + name);
+const ev = (f, ...a) => page.evaluate(f, ...a);
+const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+ok('French by default', await ev(() => document.documentElement.lang === 'fr' && document.title.startsWith('Décodeur')));
+ok('welcome screen at rest: two actions, no example, no tabs', await ev(() => !!document.querySelector('.welcome h1') && !!document.querySelector('.welcome [data-act="open"]') && !!document.querySelector('.welcome [data-act="pdfhelp"]') && !document.querySelector('.stub') && getComputedStyle(document.querySelector('#tabs')).display === 'none'));
+// "How to get the PDF" sheet
+await page.click('.welcome [data-act="pdfhelp"]'); await wait(600);
+ok('help sheet opens', await ev(() => { const w = document.querySelector('#psheet'); return !w.hidden && w.classList.contains('on') && document.querySelectorAll('#psheet .steps li').length >= 3; }));
+const before = await ev(() => document.querySelector('#psheet .steps').textContent);
+const other = await ev(() => document.querySelector('#psheet [data-ph][aria-selected="false"]').dataset.ph);
+await page.click(`#psheet [data-ph="${other}"]`); await wait(300);
+ok('phone / computer switch changes the steps', await ev((o, b) => document.querySelector(`#psheet [data-ph="${o}"]`).getAttribute('aria-selected') === 'true' && document.querySelector('#psheet .steps').textContent !== b && getComputedStyle(document.querySelector('#psheet .segc')).getPropertyValue('--i').trim() === (o === 'phone' ? '0' : '1'), other, before));
+await page.keyboard.press('Escape'); await wait(550);
+ok('Escape closes the sheet', await ev(() => document.querySelector('#psheet').hidden));
+await page.click('.welcome [data-act="pdfhelp"]'); await wait(600);
+const g = await page.$('#psheet .sh-grab'); const gb = await g.boundingBox();
+await page.mouse.move(gb.x + gb.width / 2, gb.y + 2); await page.mouse.down();
+for (let i = 1; i <= 8; i++) { await page.mouse.move(gb.x + gb.width / 2, gb.y + 2 + i * 22); await wait(16); }
+await page.mouse.up(); await wait(550);
+ok('swiping the sheet down closes it', await ev(() => document.querySelector('#psheet').hidden));
+// share the app: a QR code a coworker's camera reads, the address, copy
+await page.click('.welcome [data-act="share"]'); await wait(600);
+await page.addScriptTag({ path: new URL('../node_modules/jsqr/dist/jsQR.js', import.meta.url).pathname });
+const qrText = await ev(async () => {
+  const svg = document.querySelector('.share-sheet .qr svg');
+  const img = new Image(); img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(new XMLSerializer().serializeToString(svg));
+  await img.decode();
+  const c = document.createElement('canvas'); c.width = c.height = 360; const x = c.getContext('2d'); x.drawImage(img, 0, 0, 360, 360);
+  const r = window.jsQR(x.getImageData(0, 0, 360, 360).data, 360, 360);
+  return r && r.data;
+});
+ok('Share: the QR code reads as the app’s address, which is also written out', qrText === 'https://powerbeef.github.io/payslip-decoder/' && /powerbeef\.github\.io\/payslip-decoder/.test(await ev(() => document.querySelector('.qr-url').textContent)), qrText);
+await page.click('[data-share="copy"]'); await wait(300);
+ok('Share: copying the link confirms it', await ev(() => /copi|copied/i.test(document.querySelector('#toast').textContent)));
+await page.keyboard.press('Escape'); await wait(550);
+ok('Share: Escape closes it', await ev(() => document.querySelector('#psheet').hidden));
+// the example payslip lives at #demo
+await ev(() => { location.hash = 'demo'; }); await wait(400);
+ok('#demo shows the example with its banner and tabs', await ev(() => !!document.querySelector('.example .pill') && !!document.querySelector('.stub') && getComputedStyle(document.querySelector('#tabs')).display !== 'none'));
+ok('the example opens on Pay: net pay first, then the lines with a jump bar', await ev(() => { const v = document.querySelector('.v-pay'); return !!v && v.firstElementChild.classList.contains('ov') && v.querySelector('.ov').firstElementChild.classList.contains('stub') && !!v.querySelector('#c-earnings') && document.querySelectorAll('.v-pay .subnav button').length >= 3; }));
+ok('no duplicates left: no separate hours card or gross-to-net list', await ev(() => !document.querySelector('.hrs, #c-ledger')));
+await page.click('a.tab[data-view="year"]'); await wait(250);
+ok('tab click routes to #year', await ev(() => location.hash === '#year' && !!document.querySelector('.v-year')));
+await page.goBack(); await wait(400);
+ok('back button returns to Pay', await ev(() => !!document.querySelector('.v-pay .stub')));
+await ev(() => { location.hash = 'overview'; }); await wait(300);
+ok('an old #overview link opens Pay', await ev(() => !!document.querySelector('.v-pay .stub') && !!document.querySelector('.tab[data-view=pay][aria-current]')));
+// the assistant takes the third tab; the checks have their own view, reached from Pay
+ok('tab bar: pay, year, ask, guide', await ev(() => [...document.querySelectorAll('#tabs .tab')].map((t) => t.dataset.view).join() === 'pay,year,ask,guide'));
+await page.click('a.tab[data-view="ask"]'); await wait(300);
+ok('Ask: question box, suggestions, text of 16 px or more (no zoom on iPhone)', await ev(() => location.hash === '#ask' && document.querySelectorAll('.ask-st .qchip').length >= 6 && parseFloat(getComputedStyle(document.querySelector('#ask-q')).fontSize) >= 16));
+await page.type('#ask-q', 'combien j’ai reçu'); await page.keyboard.press('Enter'); await wait(300);
+const flat = (t) => t.replace(/[\s  ]/g, '');
+ok('typed question: answer with the net pay, box emptied, suggestions hidden', await ev((n) => { const a = document.querySelector('.qa .a'); return !!a && a.textContent.replace(/[\s  ]/g, '').includes(n) && document.querySelector('#ask-q').value === '' && getComputedStyle(document.querySelector('.ask-st')).display === 'none'; }, flat(await ev(() => window.PDUI.state.sample.A.summary.net.toFixed(2).replace('.', ',')))));
+await page.type('#ask-q', 'how much QPP did I pay'); await page.keyboard.press('Enter'); await wait(300);
+ok('English question in the French app: answered in English, newest on top', await ev(() => { const q = document.querySelectorAll('.qa'); return q.length === 2 && q[0].lang === 'en' && /QPP|Pension/.test(q[0].textContent) && q[1].lang === 'fr'; }));
+await page.click('.qa .a-go [data-go]'); await wait(300);
+ok('an answer links to where the line is shown', await ev(() => location.hash === '#pay'));
+await page.click('a.tab[data-view="ask"]'); await wait(300);
+ok('answers stay when you come back', await ev(() => document.querySelectorAll('.qa').length === 2));
+await page.click('[data-act="ask-clear"]'); await wait(150);
+ok('Clear empties the answers and brings back the suggestions', await ev(() => !document.querySelector('.qa') && getComputedStyle(document.querySelector('.ask-st')).display !== 'none'));
+await page.click('.ask-st .qchip:nth-child(2)'); await wait(300);
+ok('a suggestion asks itself', await ev(() => document.querySelectorAll('.qa').length === 1 && document.querySelector('.qa .q-t').textContent === document.querySelectorAll('.ask-st .qchip')[1].textContent));
+await ev(() => window.PDUI.go('pay')); await wait(250);
+ok('Pay ends with the checks, linked to the full list', await ev(() => { const c = document.querySelector('.v-pay > :last-child'); return !!c && c.id === 'c-checks' && !!c.querySelector('[data-go="checks"]'); }));
+await ev(() => window.PDUI.go('overview')); await wait(250);
+await page.click('[data-act="menu"]');
+ok('menu opens, with Share the app', await ev(() => !document.querySelector('#menu').hidden && !!document.querySelector('#menu [data-act="share"]')));
+await page.click('#menu [data-act="priv"]');
+ok('privacy toggle blurs', await ev(() => document.body.classList.contains('private') && getComputedStyle(document.querySelector('.pii')).filter.includes('blur')));
+await page.click('#menu [data-lang="en"]'); await wait(100);
+ok('language switch to en', await ev(() => document.documentElement.lang === 'en' && document.querySelector('.tab[data-view=pay] .tlb').textContent === 'Pay'));
+ok('privacy persists across re-render', await ev(() => document.body.classList.contains('private')));
+await page.click('[data-act="menu"]'); await page.click('#menu [data-act="priv"]');
+await page.click('.example [data-act="pdfhelp"]'); await wait(600);
+ok('example banner opens the PDF help', await ev(() => !document.querySelector('#psheet').hidden));
+await page.keyboard.press('Escape'); await wait(550);
+await ev(() => window.PDUI.go('guide')); await wait(300);
+ok('Guide starts with the agreement section', await ev(() => document.querySelector('.v-guide .subnav button').dataset.scroll === 'g-agreement'));
+await page.click('.v-guide .subnav [data-scroll="g-glossary"]'); await wait(1200);
+ok('Guide jump bar scrolls to the glossary', await ev(() => Math.abs(document.getElementById('g-glossary').getBoundingClientRect().top) < 140));
+await page.type('#gl-q', 'rrq');
+ok('glossary filter narrows', await ev(() => { const v = [...document.querySelectorAll('#gl > div')].filter((d) => !d.hidden).length; return v > 0 && v < 6; }));
+await page.evaluate(() => { const q = document.querySelector('#gl-q'); q.value = 'zzqq'; q.dispatchEvent(new Event('input')); });
+ok('glossary empty message', await ev(() => !document.getElementById('gl-none').hidden));
+// wrong file: leaves the example; the warning is a popup over the welcome screen, which doesn't move
+const openBtnTop = () => ev(() => Math.round(document.querySelector('.welcome [data-act="open"]').getBoundingClientRect().top));
+const alertOpen = () => ev(() => { const a = document.getElementById('alert'); return !a.hidden && a.classList.contains('on') && !!a.querySelector('[role="alertdialog"] .al-x'); });
+const alertClosed = () => ev(() => document.getElementById('alert').hidden);
+let input = await page.$('#file'); await input.uploadFile(CONV);
+await page.waitForFunction(() => { const a = document.getElementById('alert'); return a && !a.hidden && a.classList.contains('on'); }, { timeout: 30000 }).catch(() => {});
+const withAlert = await openBtnTop();
+ok('non-payslip PDF: popup with title, file name and X; no inline error', await alertOpen() && await ev(() => /Workday/.test(document.getElementById('al-t').textContent) && /\.pdf/.test(document.querySelector('#alert .al-f').textContent) && !document.querySelector('.wl-err') && !document.querySelector('.example')));
+await page.click('#alert .al-x'); await wait(450);
+ok('X closes the popup, and the welcome buttons did not move', await alertClosed() && withAlert === await openBtnTop(), `button top ${withAlert} / ${await openBtnTop()}`);
+input = await page.$('#file'); await input.uploadFile(CONV);
+await page.waitForFunction(() => document.getElementById('alert').classList.contains('on'), { timeout: 30000 }).catch(() => {});
+await page.keyboard.press('Escape'); await wait(450);
+ok('Escape closes the popup', await alertClosed());
+input = await page.$('#file'); await input.uploadFile(CONV);
+await page.waitForFunction(() => document.getElementById('alert').classList.contains('on'), { timeout: 30000 }).catch(() => {});
+await page.mouse.click(8, 8); await wait(450);
+ok('tapping outside closes the popup', await alertClosed());
+// two payslips
+input = await page.$('#file'); await input.uploadFile(R, VAR + '/week2.pdf');
+await page.waitForFunction(() => window.PDUI.state.slips.length === 2, { timeout: 30000 }).catch(() => {});
+ok('two payslips loaded, welcome gone', await ev(() => window.PDUI.state.slips.length === 2 && !document.querySelector('.example') && !document.querySelector('.welcome')));
+ok('time off panel: sick time never negative, banked hours and vacation shown', await ev(() => { const v = [...document.querySelectorAll('.toff .tof-v')].map((x) => x.textContent); return v.length >= 3 && !v.some((x) => /[−-]\s*\d/.test(x)) && !document.querySelector('.ov .chk'); }));
+ok('opened view is Pay, latest selected', await ev(() => location.hash === '#pay' && window.PDUI.state.cur === 1 && document.querySelector('select[data-act="slip"]').value === '1'));
+input = await page.$('#file'); await input.uploadFile(CONV);
+await page.waitForFunction(() => document.getElementById('alert').classList.contains('on'), { timeout: 30000 }).catch(() => {});
+ok('wrong file with payslips open: popup, payslips kept', await alertOpen() && await ev(() => window.PDUI.state.slips.length === 2));
+await page.click('#alert .al-x'); await wait(450);
+await page.select('select[data-act="slip"]', '0'); await new Promise((r) => setTimeout(r, 200));
+ok('slip picker switches payslip', await ev(() => window.PDUI.state.cur === 0 && document.querySelector('.stub-d').textContent.includes('5')));
+await ev(() => window.PDUI.go('year')); await new Promise((r) => setTimeout(r, 200));
+ok('history chart with 2 columns', await ev(() => document.querySelectorAll('#y-hist .col').length === 2));
+await ev(() => window.PDUI.go('ask')); await wait(250);
+ok('with two payslips the first suggestion is the comparison', await ev(() => document.querySelector('.ask-st .qchip').textContent === window.PD.STR[window.PDUI.state.lang].ask.starterCompare));
+await page.click('.ask-st .qchip'); await wait(300);
+ok('the assistant compares the two payslips (same amounts here, different dates)', await ev(() => { const a = document.querySelector('.qa .a'); return !!a && a.querySelectorAll('p').length >= 2 && !!a.querySelector('[data-go="year:y-hist"]'); }));
+await ev(() => window.PDUI.go('guide')); await new Promise((r) => setTimeout(r, 200));
+await page.click('#orig-d summary');
+await page.waitForFunction(() => document.querySelectorAll('#orig-pages canvas').length > 0, { timeout: 20000 }).catch(() => {});
+ok('original PDF renders', await ev(() => document.querySelectorAll('#orig-pages canvas').length > 0));
+// waffle legend focus (desktop)
+await page.setViewport({ width: 1280, height: 900 });
+await wait(400);
+// leaving phone emulation reloads the page, so open the payslip again
+if (!(await ev(() => window.PDUI.state.slips.length))) { input = await page.$('#file'); await input.uploadFile(R); await page.waitForFunction(() => window.PDUI.state.slips.length > 0, { timeout: 30000 }).catch(() => {}); }
+await ev(() => window.PDUI.go('overview')); await new Promise((r) => setTimeout(r, 200));
+await page.hover('.legend.hov li[data-cat="incomeTax"]');
+ok('legend hover highlights waffle', await ev(() => document.querySelector('.waffle').dataset.focus === 'incomeTax'));
+ok('rail visible on desktop, menu hidden', await ev(() => getComputedStyle(document.querySelector('.rail-x')).display !== 'none' && getComputedStyle(document.querySelector('.menu-w')).display === 'none'));
+await page.click('.rail-acts [data-act="csv"]'); await new Promise((r) => setTimeout(r, 800));
+const files = fs.readdirSync(dl); ok('CSV downloaded ' + files.join(','), files.some((f) => f.endsWith('.csv')));
+// bad payslip -> warning badge
+input = await page.$('#file'); await input.uploadFile(VAR + '/bad.pdf');
+await page.waitForFunction(() => window.PDUI.state.slips.some((s) => s.A.checkStats.warn > 0), { timeout: 30000 }).catch(() => {});
+await ev(() => { const S = window.PDUI.state; S.cur = S.slips.findIndex((s) => s.A.checkStats.warn > 0); window.PDUI.render(); });
+ok('a failed check shows at the top of Pay with the flagged items', await ev(() => !!document.querySelector('.ov .chk.has-warn') && document.querySelectorAll('.chk-l li.warn').length > 0));
+await ev(() => window.PDUI.go('checks')); await wait(300);
+ok('the checks view keeps the Pay tab selected', await ev(() => !!document.querySelector('.tab[data-view=pay][aria-current]')));
+ok('Checks lists the flagged group first, problems on top', await ev(() => { const first = document.querySelector('.v-checks .card .checks'); return !!first && first.querySelector('li').classList.contains('warn'); }));
+// print layout
+await ev(() => { window.PDUI.state.printing = true; window.PDUI.render(); });
+await page.emulateMediaType('print');
+await page.pdf({ path: '/tmp/pd-test-print.pdf', format: 'Letter', printBackground: true });
+await page.emulateMediaType('screen');
+await ev(() => { window.PDUI.state.printing = false; window.PDUI.render(); });
+ok('print rendered to PDF', fs.statSync('/tmp/pd-test-print.pdf').size > 50000);
+// one payslip open, asked to compare: open a second one and the answer follows
+await page.reload(); await wait(500);
+await ev(() => { location.hash = 'demo'; }); await wait(400);
+await ev(() => window.PDUI.go('ask')); await wait(250);
+await ev(() => window.PDUI.ask('What changed since my last payslip?')); await wait(200);
+ok('compare with one payslip offers to open another', await ev(() => !!document.querySelector('.qa .a-open[data-then]')));
+const [chooser] = await Promise.all([page.waitForFileChooser({ timeout: 10000 }), page.click('.qa .a-open')]);
+await chooser.accept([R, VAR + '/week3.pdf']); // week3: federal tax changed, so there is something to explain
+await page.waitForFunction(() => window.PDUI.state.slips.length === 2 && document.querySelector('.qa li'), { timeout: 30000 }).catch(() => {});
+ok('after opening the second payslip the comparison is answered, naming what changed', await ev(() => location.hash === '#ask' && document.querySelectorAll('.qa').length === 1 && document.querySelectorAll('.qa .a li').length >= 1));
+ok('no page errors', errs.length === 0);
+if (errs.length) console.log(errs.join('\n'));
+await browser.close();

@@ -1,0 +1,27 @@
+{
+  "name": "payslip-decoder",
+  "private": true,
+  "description": "Explains Workday payslips in plain English or French, privately in the browser.",
+  "scripts": {
+    "build": "node build.mjs",
+    "publish-site": "PUBLISH=1 node build.mjs",
+    "leaks": "node tools/leak_scan.mjs",
+    "test:analyze": "node tests/analyze.mjs",
+    "test:ui": "node tests/ui.mjs",
+    "test:pages": "node tests/pages.mjs && node tests/pages-standalone.mjs",
+    "test:fullscreen": "node tests/fullscreen.mjs",
+    "test:assistant": "node tests/assistant.mjs",
+    "train": "cd assistant && python3 train.py",
+    "test:rules": "node tests/rules.mjs"
+  },
+  "dependencies": {
+    "@fontsource/barlow": "^5.3.0",
+    "@fontsource/barlow-condensed": "^5.3.0",
+    "pdfjs-dist": "6.5.438",
+    "puppeteer-core": "^25.17.0"
+  },
+  "devDependencies": {
+    "jsqr": "^1.4.0",
+    "qrcode-generator": "^1.5.2"
+  }
+}
