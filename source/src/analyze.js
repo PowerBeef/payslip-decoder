@@ -25,7 +25,7 @@
       qc: null,
     },
     2026: {
-      qpp: { rate: 0.063, base: 0.053, enh: 0.01, mga: 74600, exempt: 3500, max: 4479.3, rate2: 0.04, mga2: 85000, max2: 416 },
+      qpp: { rate: 0.063, base: 0.053, enh: 0.01, mga: 74600, exempt: 3500, max: 4479.9, rate2: 0.04, mga2: 85000, max2: 416 },
       ei: { rate: 0.013, mie: 68900, max: 895.7 },
       qpip: { rate: 0.0043, mie: 103000, max: 442.9 },
       fed: {
