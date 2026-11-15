@@ -9,27 +9,66 @@
   const PROV = 'qc|on|nb|ns|pe|nl|mb|sk|ab|bc|yt|nt|nu|quebec|ontario';
   const fromB64 = (s) => Uint8Array.from(atob(s), (c) => c.charCodeAt(0));
 
-  /* candidate key material from a payslip header: "<first word of employer>|<city>" */
+  /* Candidate key material from a payslip header: "<employer word>|<city>". Workday may print the employer's name
+     in either language's word order and the city in several ways, so a few spellings are tried: either of the first
+     two words of the name (legal words like "inc." skipped), and the word before the province or the postal code.
+     A pack lists the spellings it accepts (each one wraps its key); the rest simply fail. At most 4 tries. */
+  const LEGAL = /^(inc|ltd|ltee|limitee|corp|corporation|co|cie|llc|ulc|lp|sec|senc|the|le|la|les|l|de|du|des|of)$/;
+  const place = (w) => w.replace(/^st-/, 'saint-').replace(/^ste-/, 'sainte-');
   PD.agreementMaterial = (h) => {
-    const comp = PD.key((h && h.company) || '').replace(/[^a-z0-9 ]/g, ' ').trim().split(/\s+/)[0] || '';
+    const words = PD.key((h && h.company) || '')
+      .replace(/[^a-z0-9 ]/g, ' ')
+      .trim()
+      .split(/\s+/)
+      .filter(Boolean);
+    // the first word as printed (how packs were keyed from the start), then the next word that isn't a legal one
+    const names = [...new Set([words[0], ...words.filter((w) => !LEGAL.test(w))])].filter(Boolean).slice(0, 2);
     const addr = PD.key((h && h.companyAddress) || '');
-    const out = [];
-    const m1 = addr.match(new RegExp(`([a-z][a-z'-]+)\\s*,\\s*(?:${PROV})\\b`));
-    if (m1) out.push(m1[1]);
+    const cities = [];
+    const m1 = addr.match(new RegExp(`([a-z][a-z'-]+)\\s*,?\\s*(?:${PROV})\\b(?!.*\\b(?:${PROV})\\b)`));
+    if (m1) cities.push(place(m1[1]));
     const m2 = addr.match(/([a-z][a-z'-]{2,})\s*,?\s*(?:[a-z]{2}\s+)?[a-z]\d[a-z]\s?\d[a-z]\d/);
-    if (m2 && !out.includes(m2[1])) out.push(m2[1]);
-    return comp ? out.slice(0, 2).map((w) => `${comp}|${w}`) : [];
+    if (m2 && !new RegExp(`^(?:${PROV})$`).test(m2[1]) && !cities.includes(place(m2[1]))) cities.push(place(m2[1]));
+    const out = [];
+    for (const n of names) for (const c of cities.slice(0, 2)) out.push(`${n}|${c}`);
+    return out.slice(0, 4);
   };
 
+  async function deriveKey(subtle, material, pack) {
+    const base = await subtle.importKey('raw', new TextEncoder().encode(material), 'PBKDF2', false, ['deriveKey']);
+    return subtle.deriveKey(
+      { name: 'PBKDF2', salt: fromB64(pack.salt), iterations: pack.iter, hash: 'SHA-256' },
+      base,
+      { name: 'AES-GCM', length: 256 },
+      false,
+      ['decrypt'],
+    );
+  }
   async function tryDecrypt(pack, material) {
     const subtle = G.crypto && G.crypto.subtle;
     if (!subtle) return null;
     try {
-      const base = await subtle.importKey('raw', new TextEncoder().encode(material), 'PBKDF2', false, ['deriveKey']);
-      const k = await subtle.deriveKey({ name: 'PBKDF2', salt: fromB64(pack.salt), iterations: pack.iter, hash: 'SHA-256' }, base, { name: 'AES-GCM', length: 256 }, false, ['decrypt']);
-      const pt = await subtle.decrypt({ name: 'AES-GCM', iv: fromB64(pack.iv) }, k, fromB64(pack.ct));
+      const k = await deriveKey(subtle, material, pack);
+      let content = k;
+      if (pack.v === 2) {
+        // format 2: the derived key unwraps the pack's own key, one wrap per accepted spelling
+        content = null;
+        for (const s of pack.slots || []) {
+          try {
+            const raw = await subtle.decrypt({ name: 'AES-GCM', iv: fromB64(s.iv) }, k, fromB64(s.k));
+            content = await subtle.importKey('raw', raw, 'AES-GCM', false, ['decrypt']);
+            break;
+          } catch (e) {
+            /* not this spelling's wrap */
+          }
+        }
+        if (!content) return null;
+      }
+      const pt = await subtle.decrypt({ name: 'AES-GCM', iv: fromB64(pack.iv) }, content, fromB64(pack.ct));
       return JSON.parse(new TextDecoder().decode(pt));
-    } catch (e) { return null; }
+    } catch (e) {
+      return null;
+    }
   }
 
   /* Unlock the pack that matches this payslip, if any. Safe to call for every payslip. */
@@ -42,12 +81,20 @@
       if (pack._open) continue;
       for (const m of mats) {
         const ag = await tryDecrypt(pack, m);
-        if (ag) { ag._material = m; pack._open = true; PD.AGREEMENTS.push(ag); return ag; }
+        if (ag) {
+          ag._material = m;
+          pack._open = true;
+          PD.AGREEMENTS.push(ag);
+          return ag;
+        }
       }
     }
     return null;
   };
-  PD.findAgreement = (h) => { const mats = PD.agreementMaterial(h); return PD.AGREEMENTS.find((a) => mats.includes(a._material)) || null; };
+  PD.findAgreement = (h) => {
+    const mats = PD.agreementMaterial(h);
+    return PD.AGREEMENTS.find((a) => mats.includes(a._material)) || null;
+  };
 
   /* agreement wording with {placeholders} */
   PD.agText = (ag, lang, k, vars = {}) => {
@@ -60,18 +107,50 @@
     if (!ids || !ids.length) return [];
     const D = (m, d) => new Date(Date.UTC(year, m - 1, d));
     const add = (t, n) => new Date(t.getTime() + n * 864e5);
-    const Y = year, a = Y % 19, b = Math.floor(Y / 100), c = Y % 100, d = Math.floor(b / 4), e = b % 4,
-      f = Math.floor((b + 8) / 25), g = Math.floor((b - f + 1) / 3), h = (19 * a + b - d - g + 15) % 30,
-      i = Math.floor(c / 4), k = c % 4, l = (32 + 2 * e + 2 * i - h - k) % 7, m = Math.floor((a + 11 * h + 22 * l) / 451);
+    const Y = year,
+      a = Y % 19,
+      b = Math.floor(Y / 100),
+      c = Y % 100,
+      d = Math.floor(b / 4),
+      e = b % 4,
+      f = Math.floor((b + 8) / 25),
+      g = Math.floor((b - f + 1) / 3),
+      h = (19 * a + b - d - g + 15) % 30,
+      i = Math.floor(c / 4),
+      k = c % 4,
+      l = (32 + 2 * e + 2 * i - h - k) % 7,
+      m = Math.floor((a + 11 * h + 22 * l) / 451);
     const easter = D(Math.floor((h + l - 7 * m + 114) / 31), ((h + l - 7 * m + 114) % 31) + 1);
-    const mondayBefore = (mo, day) => { let t = D(mo, day); do { t = add(t, -1); } while (t.getUTCDay() !== 1); return t; };
-    const nthMonday = (mo, n) => { let t = D(mo, 1); while (t.getUTCDay() !== 1) t = add(t, 1); return add(t, 7 * (n - 1)); };
-    const H = {
-      newYear: () => D(1, 1), dayAfterNewYear: () => D(1, 2), goodFriday: () => add(easter, -2), easterMonday: () => add(easter, 1),
-      patriots: () => mondayBefore(5, 25), stJean: () => D(6, 24), canada: () => D(7, 1), labour: () => nthMonday(9, 1),
-      thanksgiving: () => nthMonday(10, 2), christmasEve: () => D(12, 24), christmas: () => D(12, 25), boxing: () => D(12, 26), newYearsEve: () => D(12, 31),
+    const mondayBefore = (mo, day) => {
+      let t = D(mo, day);
+      do {
+        t = add(t, -1);
+      } while (t.getUTCDay() !== 1);
+      return t;
     };
-    return ids.map((id) => (H[id] ? H[id]() : null)).map((t) => (t ? (t.getUTCDay() === 6 ? add(t, -1) : t.getUTCDay() === 0 ? add(t, 1) : t).toISOString().slice(0, 10) : null));
+    const nthMonday = (mo, n) => {
+      let t = D(mo, 1);
+      while (t.getUTCDay() !== 1) t = add(t, 1);
+      return add(t, 7 * (n - 1));
+    };
+    const H = {
+      newYear: () => D(1, 1),
+      dayAfterNewYear: () => D(1, 2),
+      goodFriday: () => add(easter, -2),
+      easterMonday: () => add(easter, 1),
+      patriots: () => mondayBefore(5, 25),
+      stJean: () => D(6, 24),
+      canada: () => D(7, 1),
+      labour: () => nthMonday(9, 1),
+      thanksgiving: () => nthMonday(10, 2),
+      christmasEve: () => D(12, 24),
+      christmas: () => D(12, 25),
+      boxing: () => D(12, 26),
+      newYearsEve: () => D(12, 31),
+    };
+    return ids
+      .map((id) => (H[id] ? H[id]() : null))
+      .map((t) => (t ? (t.getUTCDay() === 6 ? add(t, -1) : t.getUTCDay() === 0 ? add(t, 1) : t).toISOString().slice(0, 10) : null));
   };
 
   PD.scaleFor = (ag, isoDate) => {
@@ -88,7 +167,8 @@
       for (const level of ['A', 'B', 'C']) {
         const base = lv[level];
         if (Math.abs(base - rate) < 0.005) hits.push({ cls: +cls, level, base, premium: null });
-        for (const p of ag.otherPremiums || []) if (Math.abs(base + p.amount - rate) < 0.005) hits.push({ cls: +cls, level, base, premium: p });
+        for (const p of ag.otherPremiums || [])
+          if (Math.abs(base + p.amount - rate) < 0.005) hits.push({ cls: +cls, level, base, premium: p });
       }
     }
     hits.sort((x, y) => (x.premium ? 1 : 0) - (y.premium ? 1 : 0));

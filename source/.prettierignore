@@ -1,0 +1,10 @@
+# generated files and build output
+src/assistant-model.js
+src/sample.js
+src/index.html
+src/sw.js
+dist/
+node_modules/
+packs.enc.json
+assistant/parity.json
+private/

@@ -1,57 +1,59 @@
-net	c’est combien qui va tomber dans mon compte
-net	what's the amount of my deposit this week
-net	Ma paie nette ça donne quoi?
-gross	how much did I gross this week
-gross	j’ai fait combien avant les déductions
-withheld	combien ils m’ont pogné en tout
-withheld	total amount deducted from my pay
-breakdown	explique-moi pourquoi j’ai juste ça
-breakdown	I don't get my pay, can you explain it
-taxes_total	j’ai payé combien d’impôts en tout cette paie
-taxes_total	total taxes on this check
-tax_rate	je perds quel pourcentage de ma paye en impôts
-line_amount	combien m’a coûté le dentaire
-line_amount	how much went to union dues
-line_amount	j’ai cotisé combien au RQAP
-explain	c’est quoi l’avantage imposable sur mon talon
-explain	what is EI exactly
-explain	c’est quoi le TP-1015.3
-hours	combien d’heures payées en tout
-hours	how much overtime did I do
-rate	c’est quoi mon salaire horaire de base
-rate	what's my base rate
-per_hour	what's my real hourly after taxes
-sick_left	combien de temps de maladie j’ai encore
-sick_left	any sick days left for me
-bank_left	ma banque d’heures est rendue à combien
-vacation_left	how much vacation money do I have
-maximums	quand est-ce que j’atteins le max de RRQ
-maximums	when am I done paying QPIP
-ytd	how much have I made so far in 2026
-ytd	mon impôt total depuis janvier
-slips	qu’est-ce qui va apparaître sur mon relevé 1
-slips	how much will my T4 show for income
-employer	combien la compagnie verse dans mon REER collectif
-checks	ma paie est-tu bonne
-checks	can you check if my pay is right
-retro	pourquoi j’ai de la rétro
-compare	pourquoi j’ai plus que l’autre semaine
-compare	how is this pay different from the previous one
-holidays	on a-tu congé à la fête du Travail
-holidays	how many stat holidays do we have
-vacation_rule	combien de vacances après 3 ans
-vacation_rule	how many weeks off after 15 years of service
-sick_rule	c’est quoi la règle pour les congés maladie
-overtime_rule	le temps supp le samedi c’est payé comment
-shift_rule	how much extra do I get for working nights
-wage_scale	quel est le taux de la classe 8 niveau A
-agreement	quand est-ce que la convention expire
-codes	what do the numbers in parentheses mean on my hours
-deposit	dans quelle banque ma paie est déposée
-period	quelles semaines cette paie couvre
-privacy	est-ce que quelqu’un d’autre peut voir mon talon
-help	what kind of stuff can I ask
-greeting	bonsoir
-thanks	thanks, that helps
-other	donne-moi une recette de lasagne
-other	what time is it in Paris
+# Unseen questions, written on November 15, 2026 (second set of the day) after the last change to gen_data.py and
+# before the final training. Never used to choose or tune anything: this is the honest score. Generic wording only.
+net	ma paye, il en reste combien après tout
+net	how much is coming to me this week
+net	c’est quoi le chiffre qui rentre à la banque
+gross	avant les déductions j’avais combien
+gross	what did I earn before deductions
+withheld	ça fait combien en tout ce qu’ils ont gardé
+withheld	what is the total of all deductions this week
+breakdown	je comprends pas pourquoi ma paie est si basse
+breakdown	can you walk me through where my pay went
+deposit	mon argent a été envoyé dans quel compte
+period	c’est pour quelle semaine ce talon-là
+line_amount	combien de rrq ils ont pris
+line_amount	how much went to employment insurance this week
+line_amount	ma cotisation syndicale est de combien
+explain	le rrq c’est pour quoi exactement
+explain	what is QPIP for
+explain	ça sert à quoi le cumul annuel
+taxes_total	mes impôts au total ça fait combien
+taxes_total	how much income tax came off this week
+tax_rate	quel est mon taux d’impôt sur cette paie
+hours	j’ai été payé pour combien d’heures en tout
+hours	how many overtime hours were on this pay
+rate	je suis payé combien de l’heure
+rate	is my hourly wage the right one
+per_hour	une fois les retenues enlevées je fais combien par heure
+sick_left	il me reste combien de maladies
+sick_left	do I still have sick days left
+bank_left	combien d’heures j’ai en banque
+vacation_left	combien de vacances il me reste
+ytd	combien j’ai fait depuis le début de l’année
+ytd	what are my year to date earnings
+maximums	quand est-ce que je vais avoir atteint le maximum de l’assurance-emploi
+maximums	when do I hit the QPP maximum
+slips	c’est quoi le montant pour la case 14 de mon T4
+slips	what goes on my RL-1 for box A
+employer	qu’est-ce que mon employeur verse pour moi
+checks	mon talon est-il correct
+checks	did they make a mistake on my pay
+retro	pourquoi j’ai de la rétro cette semaine
+compare	pourquoi ma paie est différente de la semaine passée
+compare	how does this pay compare to the last one
+holidays	c’est quand le prochain jour férié
+holidays	when is the next stat holiday
+vacation_rule	j’ai droit à combien de vacances avec 3 ans d’ancienneté
+vacation_rule	how many weeks of vacation after 3 years
+sick_rule	les congés de maladie, j’en ai combien dans l’année
+overtime_rule	how is overtime paid on a Sunday
+shift_rule	la prime de nuit c’est combien de l’heure
+wage_scale	quel est le salaire d’une classe 2
+agreement	when does our collective agreement end
+codes	the numbers in brackets after the line, what are they
+privacy	does my payslip get uploaded somewhere
+greeting	bonjour
+thanks	merci beaucoup
+help	what can you help me with
+other	c’est quoi la recette du pâté chinois
+other	what's the weather tomorrow

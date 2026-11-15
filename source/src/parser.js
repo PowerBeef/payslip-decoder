@@ -4,27 +4,42 @@
   'use strict';
   const PD = (G.PD = G.PD || {});
 
-  const norm = (s) => String(s || '').normalize('NFC').replace(/[  ]/g, ' ').replace(/\s+/g, ' ').trim();
+  const norm = (s) =>
+    String(s || '')
+      .normalize('NFC')
+      .replace(/[  ]/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
   const key = (s) => norm(s).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[’`´]/g, "'");
-  PD.norm = norm; PD.key = key;
+  PD.norm = norm;
+  PD.key = key;
 
   /* ---------- numbers & dates ---------- */
   function parseNum(raw) {
     let s = norm(raw);
     if (!s || !/\d/.test(s)) return NaN;
     let neg = false;
-    if (/^\(.*\)$/.test(s)) { neg = true; s = s.slice(1, -1); }
+    if (/^\(.*\)$/.test(s)) {
+      neg = true;
+      s = s.slice(1, -1);
+    }
     s = s.replace(/\$|CAD|USD/gi, '').trim();
     if (/^\+/.test(s)) s = s.slice(1).trim();
-    if (/^[-−–]/.test(s)) { neg = !neg; s = s.slice(1).trim(); }
-    if (/[-−]$/.test(s)) { neg = !neg; s = s.slice(0, -1); }
+    if (/^[-−–]/.test(s)) {
+      neg = !neg;
+      s = s.slice(1).trim();
+    }
+    if (/[-−]$/.test(s)) {
+      neg = !neg;
+      s = s.slice(0, -1);
+    }
     s = s.trim();
     if (/^\d{1,3}(,\d{3})*(\.\d+)?$/.test(s) || /^\d+(\.\d+)?$/.test(s)) s = s.replace(/,/g, '');
     else if (/^\d{1,3}( \d{3})*(,\d+)?$/.test(s) || /^\d+,\d+$/.test(s)) s = s.replace(/ /g, '').replace(',', '.');
     else if (/^\d{1,3}(\.\d{3})*(,\d+)?$/.test(s)) s = s.replace(/\./g, '').replace(',', '.');
     else return NaN;
     const v = parseFloat(s);
-    return isNaN(v) ? NaN : (neg ? -v : v);
+    return isNaN(v) ? NaN : neg ? -v : v;
   }
   PD.parseNum = parseNum;
   const isNum = (s) => !isNaN(parseNum(s));
@@ -33,7 +48,7 @@
 
   /* ---------- label dictionaries (normalized keys) ---------- */
   const L = {
-    name: ['nom', 'name', 'nom de l\'employe'],
+    name: ['nom', 'name', "nom de l'employe"],
     company: ['societe', 'company', 'entreprise'],
     current: ['actuel', 'current', 'periode courante', 'courant'],
     ytd: ['cumul annuel', 'ytd', 'year to date', 'cumulatif'],
@@ -49,14 +64,16 @@
   function buildLines(pages) {
     const all = [];
     pages.forEach((pg, pi) => {
-      const items = pg.items
-        .map((it) => ({ ...it, str: norm(it.str), page: pi, gy: pi * 10000 + it.y }))
-        .filter((it) => it.str !== '');
+      const items = pg.items.map((it) => ({ ...it, str: norm(it.str), page: pi, gy: pi * 10000 + it.y })).filter((it) => it.str !== '');
       items.sort((a, b) => a.gy - b.gy || a.x0 - b.x0);
       let cur = null;
       for (const it of items) {
-        if (cur && Math.abs(it.gy - cur.gy) <= 1.6) { cur.items.push(it); }
-        else { cur = { gy: it.gy, page: pi, items: [it] }; all.push(cur); }
+        if (cur && Math.abs(it.gy - cur.gy) <= 1.6) {
+          cur.items.push(it);
+        } else {
+          cur = { gy: it.gy, page: pi, items: [it] };
+          all.push(cur);
+        }
       }
     });
     all.forEach((ln) => ln.items.sort((a, b) => a.x0 - b.x0));
@@ -93,10 +110,33 @@
 
   /* A single text item can hold two right-aligned column headers ("Montant Cumul annuel").
      Split it on known phrases and estimate each part's x-extent from character offsets. */
-  const HEAD_PHRASES = ['cumul annuel', 'montant', 'heures', 'taux', 'dates', 'description', 'ytd amount', 'ytd hours',
-    'amount', 'ytd', 'hours', 'rate', 'cumule', 'reduit', 'disponible', 'accrued', 'reduced', 'available', 'balance', 'current', 'solde', 'utilise'];
+  const HEAD_PHRASES = [
+    'cumul annuel',
+    'montant',
+    'heures',
+    'taux',
+    'dates',
+    'description',
+    'ytd amount',
+    'ytd hours',
+    'amount',
+    'ytd',
+    'hours',
+    'rate',
+    'cumule',
+    'reduit',
+    'disponible',
+    'accrued',
+    'reduced',
+    'available',
+    'balance',
+    'current',
+    'solde',
+    'utilise',
+  ];
   function splitHeader(o) {
-    const s = o.str, k = key(s);
+    const s = o.str,
+      k = key(s);
     const parts = [];
     let pos = 0;
     while (pos < k.length) {
@@ -115,8 +155,15 @@
   function parsePayslip(pages) {
     const lines = buildLines(pages);
     const out = {
-      header: {}, summary: null, sections: [], vacation: [], withholding: [], payments: [],
-      warnings: [], rawLabels: {}, pageCount: pages.length,
+      header: {},
+      summary: null,
+      sections: [],
+      vacation: [],
+      withholding: [],
+      payments: [],
+      warnings: [],
+      rawLabels: {},
+      pageCount: pages.length,
     };
     const pageRight = (p) => Math.max(...pages[p].items.map((i) => i.x1), 0) + 2;
 
@@ -151,7 +198,13 @@
         const t = ln.items.map((i) => i.str);
         const pos = t.findIndex((s) => /^(position|poste)\b/i.test(s));
         if (pos >= 0 || (out.header.name && key(t[0]) === key(out.header.name))) {
-          const posStr = pos >= 0 ? t.slice(pos).join(' ').replace(/^(position|poste)\s*:?\s*/i, '') : '';
+          const posStr =
+            pos >= 0
+              ? t
+                  .slice(pos)
+                  .join(' ')
+                  .replace(/^(position|poste)\s*:?\s*/i, '')
+              : '';
           if (posStr) out.header.position = posStr;
           const addr = t.slice(1, pos >= 0 ? pos : undefined).join(', ');
           if (addr) out.header.employeeAddress = addr;
@@ -167,7 +220,9 @@
       const ddmm = parts.some((p) => p[0] > 12) && !parts.some((p) => p[1] > 12);
       out.header.dateOrder = ddmm ? 'DMY' : 'MDY';
       const toISO = (p) => {
-        const [a, b, y] = p; const m = ddmm ? b : a; const d = ddmm ? a : b;
+        const [a, b, y] = p;
+        const m = ddmm ? b : a;
+        const d = ddmm ? a : b;
         return `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
       };
       const iso = parts.map(toISO);
@@ -176,10 +231,14 @@
       out.header.payDate = iso[2] || iso[1];
     }
     const toISOAny = (s) => {
-      const m = s.match(DATE_RE); if (!m) return null;
+      const m = s.match(DATE_RE);
+      if (!m) return null;
       const ddmm = out.header.dateOrder === 'DMY';
-      const a = +m[1], b = +m[2], y = +m[3];
-      const mm = ddmm ? b : a, dd = ddmm ? a : b;
+      const a = +m[1],
+        b = +m[2],
+        y = +m[3];
+      const mm = ddmm ? b : a,
+        dd = ddmm ? a : b;
       return `${y}-${String(mm).padStart(2, '0')}-${String(dd).padStart(2, '0')}`;
     };
 
@@ -192,7 +251,10 @@
       let hdr = null;
       for (let j = curIdx - 1; j >= Math.max(0, curIdx - 3); j--) {
         const nonNum = lines[j].items.filter((i) => !isNum(i.str));
-        if (nonNum.length >= 3) { hdr = lines[j]; break; }
+        if (nonNum.length >= 3) {
+          hdr = lines[j];
+          break;
+        }
       }
       if (hdr) {
         const cols = hdr.items.filter((i) => !isNum(i.str)).map((i) => ({ label: i.str, x1: i.x1, x0: i.x0 }));
@@ -204,7 +266,8 @@
             return it ? parseNum(it.str) : null;
           });
         };
-        const cur = pick(curLn), ytd = pick(ytdLn);
+        const cur = pick(curLn),
+          ytd = pick(ytdLn);
         out.summary = { columns: cols.map((c, i) => ({ label: c.label, current: cur[i], ytd: ytd[i] })) };
       }
     }
@@ -212,19 +275,28 @@
 
     /* --- sections with a "Description" header --- */
     const descHeads = [];
-    lines.forEach((ln, li) => ln.items.forEach((it) => { if (isLabel(it.str, L.description)) descHeads.push({ li, it }); }));
+    lines.forEach((ln, li) =>
+      ln.items.forEach((it) => {
+        if (isLabel(it.str, L.description)) descHeads.push({ li, it });
+      }),
+    );
     const secDefs = descHeads.map(({ li, it }) => {
       const ln = lines[li];
       const nextOnLine = ln.items.filter((o) => isLabel(o.str, L.description) && o.x0 > it.x0 + 5).sort((a, b) => a.x0 - b.x0)[0];
       const Lx = it.x0 - 1;
       const Rx = nextOnLine ? nextOnLine.x0 - 3 : pageRight(ln.page);
       // title: nearest line above (same page, within 16pt) with non-numeric text within [Lx,Rx]
-      let title = '', titleGy = ln.gy;
+      let title = '',
+        titleGy = ln.gy;
       for (let j = li - 1; j >= Math.max(0, li - 3); j--) {
         const up = lines[j];
         if (up.page !== ln.page || ln.gy - up.gy > 16) break;
         const t = up.items.filter((o) => within(o, Lx, Rx) && !isNum(o.str));
-        if (t.length) { title = textOf(t); titleGy = up.gy; break; }
+        if (t.length) {
+          title = textOf(t);
+          titleGy = up.gy;
+          break;
+        }
       }
       return { li, Lx, Rx, title, titleGy, headGy: ln.gy, page: ln.page };
     });
@@ -232,12 +304,18 @@
     // barrier items: other section titles + standalone labels
     const barriers = [];
     secDefs.forEach((s) => barriers.push({ gy: s.titleGy, Lx: s.Lx, Rx: s.Rx }));
-    lines.forEach((ln) => ln.items.forEach((it) => {
-      const k = key(it.str);
-      if (L.payInfo.includes(k) || /^solde de vacances|^accumulation de vacances|^vacation balance|^montant total de la demande$|^total claim amount$/.test(k) || isLabel(it.str, L.federal)) {
-        barriers.push({ gy: ln.gy, Lx: it.x0, Rx: it.x1 });
-      }
-    }));
+    lines.forEach((ln) =>
+      ln.items.forEach((it) => {
+        const k = key(it.str);
+        if (
+          L.payInfo.includes(k) ||
+          /^solde de vacances|^accumulation de vacances|^vacation balance|^montant total de la demande$|^total claim amount$/.test(k) ||
+          isLabel(it.str, L.federal)
+        ) {
+          barriers.push({ gy: ln.gy, Lx: it.x0, Rx: it.x1 });
+        }
+      }),
+    );
 
     for (const sd of secDefs) {
       const hl = lines[sd.li];
@@ -255,17 +333,23 @@
         if (startsAtDesc || its.some((o) => isNum(o.str))) break;
         for (const o of its) {
           const c = cols.filter((c) => c !== cols[0]).sort((a, b) => Math.abs(a.x1 - o.x1) - Math.abs(b.x1 - o.x1))[0];
-          if (c && Math.abs(c.x1 - o.x1) < 6) { c.label = c.label + ' ' + o.str; c.x0 = Math.min(c.x0, o.x0); }
+          if (c && Math.abs(c.x1 - o.x1) < 6) {
+            c.label = c.label + ' ' + o.str;
+            c.x0 = Math.min(c.x0, o.x0);
+          }
         }
       }
       cols.forEach((c) => (c.role = colRole(c.label)));
       // Workday always puts year-to-date columns to the right of current ones: a repeated
       // "Hours"/"Amount" header further right is the YTD version.
       const seenRoles = new Set();
-      cols.slice().sort((a, b) => a.x0 - b.x0).forEach((c) => {
-        if (seenRoles.has(c.role)) c.role = c.role === 'hours' ? 'ytdHours' : c.role === 'amount' ? 'ytd' : c.role;
-        seenRoles.add(c.role);
-      });
+      cols
+        .slice()
+        .sort((a, b) => a.x0 - b.x0)
+        .forEach((c) => {
+          if (seenRoles.has(c.role)) c.role = c.role === 'hours' ? 'ytdHours' : c.role === 'amount' ? 'ytd' : c.role;
+          seenRoles.add(c.role);
+        });
       const numCols = cols.filter((c) => !['desc', 'dates'].includes(c.role));
       const datesCol = cols.find((c) => c.role === 'dates');
       const firstNumX0 = numCols.length ? Math.min(...numCols.map((c) => c.x0)) - 4 : sd.Rx;
@@ -279,24 +363,40 @@
         if (!its.length) continue;
         // skip repeated header lines on new pages
         if (its.some((o) => isLabel(o.str, L.description))) continue;
-        const numItems = [], descParts = [];
+        const numItems = [],
+          descParts = [];
         let datesStr = '';
         for (const o of its) {
-          if (isNum(o.str) && o.x0 >= firstNumX0 - 30 && numCols.length) { numItems.push(o); continue; }
-          if (datesCol && DATE_RANGE_RE.test(o.str) && !/[a-z]/i.test(o.str.replace(DATE_RANGE_RE, ''))) { datesStr = o.str; continue; }
+          if (isNum(o.str) && o.x0 >= firstNumX0 - 30 && numCols.length) {
+            numItems.push(o);
+            continue;
+          }
+          if (datesCol && DATE_RANGE_RE.test(o.str) && !/[a-z]/i.test(o.str.replace(DATE_RANGE_RE, ''))) {
+            datesStr = o.str;
+            continue;
+          }
           descParts.push(o);
         }
         let desc = textOf(descParts);
         const m = desc.match(DATE_RANGE_RE);
-        if (m) { datesStr = datesStr || m[0]; desc = norm(desc.slice(0, m.index)); }
+        if (m) {
+          datesStr = datesStr || m[0];
+          desc = norm(desc.slice(0, m.index));
+        }
         const row = { desc, numItems, values: {}, gy: ln.gy };
         if (datesStr) {
           const dm = datesStr.match(DATE_RANGE_RE);
           row.dates = { from: toISOAny(dm[1]), to: toISOAny(dm[2]), raw: norm(dm[0]) };
         }
-        if (sd.title && key(desc) === key(sd.title)) { total = row; break; }
-        if (!numItems.length && rows.length && ln.gy - rows[rows.length - 1].gy < 9.6 && desc && !row.dates) {
-          rows[rows.length - 1].desc = norm(rows[rows.length - 1].desc + ' ' + desc);
+        if (sd.title && key(desc) === key(sd.title)) {
+          total = row;
+          break;
+        }
+        // a description Workday wrapped onto the next line(s): no numbers, no dates, right below the previous line
+        const prev = rows[rows.length - 1];
+        if (!numItems.length && prev && ln.gy - (prev.lastGy || prev.gy) < 9.6 && desc && !row.dates) {
+          prev.desc = norm(prev.desc + ' ' + desc);
+          prev.lastGy = ln.gy;
           continue;
         }
         if (!desc && !numItems.length) continue;
@@ -309,7 +409,11 @@
       const clusters = [];
       for (const x of edges) {
         const c = clusters[clusters.length - 1];
-        if (c && x - c.max <= 4) { c.max = x; c.sum += x; c.n++; } else clusters.push({ min: x, max: x, sum: x, n: 1 });
+        if (c && x - c.max <= 4) {
+          c.max = x;
+          c.sum += x;
+          c.n++;
+        } else clusters.push({ min: x, max: x, sum: x, n: 1 });
       }
       clusters.forEach((c) => (c.x = c.sum / c.n));
       const colsByX = numCols.slice().sort((a, b) => a.x1 - b.x1);
@@ -322,6 +426,7 @@
         return c && Math.abs(c.x1 - x1) < 12 ? c.role : null;
       };
       for (const r of all) {
+        delete r.lastGy;
         for (const o of r.numItems) {
           const role = roleFor(o.x1);
           if (role && !(role in r.values)) r.values[role] = parseNum(o.str);
@@ -329,7 +434,14 @@
         }
         delete r.numItems;
       }
-      out.sections.push({ title: sd.title, columns: cols.map((c) => ({ label: c.label, role: c.role })), rows, total, page: sd.page, x: sd.Lx });
+      out.sections.push({
+        title: sd.title,
+        columns: cols.map((c) => ({ label: c.label, role: c.role })),
+        rows,
+        total,
+        page: sd.page,
+        x: sd.Lx,
+      });
     }
 
     /* --- vacation balances (label line, values below) --- */
@@ -346,7 +458,9 @@
     });
 
     /* --- withholding (TD1 / TP-1015.3) table --- */
-    const fedIdx = lines.findIndex((ln) => ln.items.some((i) => isLabel(i.str, L.federal)) && ln.items.some((i) => isLabel(i.str, L.province)));
+    const fedIdx = lines.findIndex(
+      (ln) => ln.items.some((i) => isLabel(i.str, L.federal)) && ln.items.some((i) => isLabel(i.str, L.province)),
+    );
     if (fedIdx >= 0) {
       const fl = lines[fedIdx];
       const fed = fl.items.find((i) => isLabel(i.str, L.federal));
@@ -381,8 +495,14 @@
           if (ln.gy - lines[j - 1].gy > 30) break;
           const row = { bank: '', accountName: '', accountNumber: '', amount: null, currency: '' };
           for (const it of ln.items) {
-            if (isNum(it.str) && /\./.test(it.str)) { row.amount = parseNum(it.str); continue; }
-            if (/^[A-Z]{3}$/.test(it.str)) { row.currency = it.str; continue; }
+            if (isNum(it.str) && /\./.test(it.str)) {
+              row.amount = parseNum(it.str);
+              continue;
+            }
+            if (/^[A-Z]{3}$/.test(it.str)) {
+              row.currency = it.str;
+              continue;
+            }
             const c = cols.slice().sort((a, b) => Math.abs(a.x0 - it.x0) - Math.abs(b.x0 - it.x0))[0];
             if (!c) continue;
             if (/banque|^bank$/.test(c.k)) row.bank = it.str;
@@ -396,6 +516,21 @@
     return out;
   }
   PD.parsePayslip = parsePayslip;
+
+  /* A PDF can hold several payslips (saved together from Workday, or merged): each one starts on a page with its own
+     header (the Name / Company labels). Pages before the first header, and pages without one (payment information),
+     go with the payslip before them. Returns the page numbers (from 0) of each payslip. */
+  PD.splitPayslips = function (pages) {
+    const starts = [];
+    pages.forEach((pg, i) => {
+      const lines = buildLines([pg]);
+      if (lines.some((ln) => ln.items.some((it) => isLabel(it.str, L.name)) && ln.items.some((it) => isLabel(it.str, L.company))))
+        starts.push(i);
+    });
+    if (starts.length <= 1) return [pages.map((_, i) => i)];
+    starts[0] = 0;
+    return starts.map((s, k) => Array.from({ length: (starts[k + 1] ?? pages.length) - s }, (_, j) => s + j));
+  };
 
   /* ---------- pdf.js glue ---------- */
   PD.extractPages = async function (pdfjs, data) {

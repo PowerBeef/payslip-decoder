@@ -26,7 +26,7 @@ explain	C’est quoi le RRQ2?
 explain	what does QPIP stand for
 explain	ça veut dire quoi salaires assujettis
 explain	what is a worktag
-explain	c’est quoi le fonds humanitaire
+explain	c’est quoi le don de charité
 hours	J’ai fait combien d’heures cette semaine?
 hours	how many hours am I getting paid this week
 hours	mes heures de temps supplémentaire
@@ -90,3 +90,120 @@ greeting	allo toi
 thanks	merci, c’est clair
 other	C’est quoi la météo demain?
 other	who won the hockey game
+# from the unseen set of November 13, missed there; their phrasings were added to the frames on November 15
+hours	how much overtime did I do
+sick_rule	c’est quoi la règle pour les congés maladie
+privacy	est-ce que quelqu’un d’autre peut voir mon talon
+# the rest of the November 13 unseen set, retired on November 15 when a new one was written
+net	c’est combien qui va tomber dans mon compte
+net	what's the amount of my deposit this week
+net	Ma paie nette ça donne quoi?
+gross	how much did I gross this week
+gross	j’ai fait combien avant les déductions
+withheld	combien ils m’ont pogné en tout
+withheld	total amount deducted from my pay
+breakdown	explique-moi pourquoi j’ai juste ça
+breakdown	I don't get my pay, can you explain it
+taxes_total	j’ai payé combien d’impôts en tout cette paie
+taxes_total	total taxes on this check
+tax_rate	je perds quel pourcentage de ma paye en impôts
+line_amount	combien m’a coûté le dentaire
+line_amount	how much went to union dues
+line_amount	j’ai cotisé combien au RQAP
+explain	c’est quoi l’avantage imposable sur mon talon
+explain	what is EI exactly
+explain	c’est quoi le TP-1015.3
+hours	combien d’heures payées en tout
+rate	c’est quoi mon salaire horaire de base
+rate	what's my base rate
+per_hour	what's my real hourly after taxes
+sick_left	combien de temps de maladie j’ai encore
+sick_left	any sick days left for me
+bank_left	ma banque d’heures est rendue à combien
+vacation_left	how much vacation money do I have
+maximums	quand est-ce que j’atteins le max de RRQ
+maximums	when am I done paying QPIP
+ytd	how much have I made so far in 2026
+ytd	mon impôt total depuis janvier
+slips	qu’est-ce qui va apparaître sur mon relevé 1
+slips	how much will my T4 show for income
+employer	combien la compagnie verse dans mon REER collectif
+checks	ma paie est-tu bonne
+checks	can you check if my pay is right
+retro	pourquoi j’ai de la rétro
+compare	pourquoi j’ai plus que l’autre semaine
+compare	how is this pay different from the previous one
+holidays	on a-tu congé à la fête du Travail
+holidays	how many stat holidays do we have
+vacation_rule	combien de vacances après 3 ans
+vacation_rule	how many weeks off after 15 years of service
+overtime_rule	le temps supp le samedi c’est payé comment
+shift_rule	how much extra do I get for working nights
+wage_scale	quel est le taux de la classe 8 niveau A
+agreement	quand est-ce que la convention expire
+codes	what do the numbers in parentheses mean on my hours
+deposit	dans quelle banque ma paie est déposée
+period	quelles semaines cette paie couvre
+help	what kind of stuff can I ask
+greeting	bonsoir
+thanks	thanks, that helps
+other	donne-moi une recette de lasagne
+other	what time is it in Paris
+# the first November 15 unseen set: its misses shaped frames, so it was retired here the same day
+net	ça va me donner combien dans mes poches cette semaine
+net	what lands in my account this time
+net	le montant que je vais toucher au final
+gross	c’est quoi mon total avant qu’ils enlèvent quoi que ce soit
+gross	what was my pay before taxes this week
+withheld	ils m’ont enlevé combien en tout
+withheld	how much got taken off altogether
+breakdown	mon argent est passé où
+breakdown	why is so little left from what I earned
+deposit	la paie a été déposée dans quel compte
+period	cette paie couvre quels jours
+line_amount	combien d’assurance-emploi cette semaine
+line_amount	how much did the union take this pay
+line_amount	la prime de nuit m’a donné combien
+explain	à quoi sert le rqap
+explain	what does the pre-tax deductions line mean
+explain	salaires assujettis ça veut dire quoi
+taxes_total	combien d’impôts j’ai payé cette semaine
+taxes_total	what did I pay in tax in total
+tax_rate	quel pourcentage de ma paie part en impôt
+hours	combien d’heures j’ai faites cette semaine
+hours	how many night hours did I get
+rate	est-ce que mon taux horaire est le bon
+rate	what am I paid an hour
+per_hour	je fais combien de l’heure une fois tout enlevé
+sick_left	combien de jours de maladie il me reste
+sick_left	how many sick days do I have left
+bank_left	j’ai combien d’heures dans ma banque de temps
+vacation_left	it says how much vacation I have left
+ytd	j’ai gagné combien depuis janvier
+ytd	how much have I made so far this year
+maximums	à partir de quand j’arrête de payer le rrq
+maximums	when will EI stop coming off my pay
+slips	qu’est-ce qui va aller à la case A de mon relevé 1
+slips	what goes in box 14 of my T4
+employer	mon employeur paie combien pour moi
+checks	est-ce qu’il y a une erreur sur ma paie
+checks	is everything on my pay right
+retro	c’est quoi le montant de rétro sur ma paie
+compare	qu’est-ce qui a changé depuis la paie d’avant
+compare	why is this one different from last week
+holidays	le prochain congé férié c’est quand
+holidays	when is labour day this year
+vacation_rule	combien de semaines de vacances après 5 ans
+vacation_rule	how much vacation do I get after ten years
+sick_rule	j’ai droit à combien de congés de maladie par année
+overtime_rule	le temps supplémentaire est payé à quel taux
+shift_rule	the evening premium is how much an hour
+wage_scale	combien gagne quelqu’un en classe 4
+agreement	ma convention se termine quand
+codes	que veut dire le 01 entre parenthèses
+privacy	est-ce que mes infos sont envoyées à mon employeur
+greeting	allo
+thanks	thanks a lot
+help	qu’est-ce que tu peux faire
+other	quel film jouer ce soir
+other	who won the game last night

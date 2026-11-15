@@ -27,25 +27,37 @@ const esc = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 const terms = new Set();
 const listFile = path.join(PRIV, 'forbidden.txt');
 const havePrivate = fs.existsSync(listFile);
-if (havePrivate) fs.readFileSync(listFile, 'utf8').split('\n').map((s) => s.trim()).filter((s) => s && !s.startsWith('#')).forEach((t) => terms.add(fold(t)));
+if (havePrivate)
+  fs.readFileSync(listFile, 'utf8')
+    .split('\n')
+    .map((s) => s.trim())
+    .filter((s) => s && !s.startsWith('#'))
+    .forEach((t) => terms.add(fold(t)));
 // the pack's own figures and references
 for (const f of havePrivate ? fs.readdirSync(PRIV).filter((n) => /^pack-.*\.json$/.test(n)) : []) {
   const raw = JSON.parse(fs.readFileSync(path.join(PRIV, f), 'utf8'));
   for (const ag of Array.isArray(raw) ? raw : [raw.agreement || raw]) {
     const money = (v) => [v.toFixed(2), v.toFixed(2).replace('.', ',')];
-    for (const s of ag.scales || []) for (const lv of Object.values(s.rates || {})) for (const v of Object.values(lv)) money(v).forEach((x) => terms.add(x));
+    for (const s of ag.scales || [])
+      for (const lv of Object.values(s.rates || {})) for (const v of Object.values(lv)) money(v).forEach((x) => terms.add(x));
     const prem = [ag.shiftPremium && ag.shiftPremium.evening, ag.shiftPremium && ag.shiftPremium.night].filter((v) => v > 0);
-    prem.forEach((v) => { terms.add('$' + v.toFixed(2)); terms.add(v.toFixed(2).replace('.', ',') + ' $'); });
+    prem.forEach((v) => {
+      terms.add('$' + v.toFixed(2));
+      terms.add(v.toFixed(2).replace('.', ',') + ' $');
+    });
     for (const m of JSON.stringify(ag).matchAll(/\b(?:art\.|article)\s*\d+\.\d+/gi)) terms.add(fold(m[0]).replace(/\s+/g, ' '));
   }
 }
 const termRe = terms.size ? new RegExp(`(?<![\\p{L}\\p{N}])(?:${[...terms].map(esc).join('|')})(?![\\p{L}\\p{N}])`, 'gu') : null;
 // contract-style references, whatever the number
-const refRe = /(?<![\p{L}\p{N}])(?:art\.|article|articles|annexe?|lettre d'entente|letter of agreement)\s+(?:\d+\.\d+|[a-z]\d?(?![\p{L}\p{N}]))/gu;
+const refRe =
+  /(?<![\p{L}\p{N}])(?:art\.|article|articles|annexe?|lettre d'entente|letter of agreement)\s+(?:\d+\.\d+|[a-z]\d?(?![\p{L}\p{N}]))/gu;
 
 // what a readable text contains, with encoded blobs removed (fonts, encrypted packs, the embedded PDF reader, model weights)
 function hits(text) {
-  let t = text.replace(/data:font\/woff2;base64,[A-Za-z0-9+/=]+/g, '').replace(/"(ct|salt|iv|e|w|b|s)":"[A-Za-z0-9+/=]+"/g, '')
+  let t = text
+    .replace(/data:font\/woff2;base64,[A-Za-z0-9+/=]+/g, '')
+    .replace(/"(ct|salt|iv|e|w|b|s)":"[A-Za-z0-9+/=]+"/g, '')
     .replace(/<script type="application\/octet-stream"[^>]*>[\s\S]*?<\/script>/g, '');
   t = fold(t);
   const out = [];
@@ -55,26 +67,32 @@ function hits(text) {
 }
 const skip = (p) => /\.(png|webp|jpg|jpeg|gif|ico|woff2?)$/i.test(p) || /(^|\/)vendor\//.test(p) || /(^|\/)licenses\//.test(p);
 // shown in the report: how many hits, not the hits themselves (the report may be pasted somewhere); --show lists them
-const report = (where, h) => problems.push(`${where}: ${h.length} hit(s)${args.has('--show') ? '  [' + [...new Set(h)].join(' | ') + ']' : ''}`);
+const report = (where, h) =>
+  problems.push(`${where}: ${h.length} hit(s)${args.has('--show') ? '  [' + [...new Set(h)].join(' | ') + ']' : ''}`);
 
 // 1. the files as they are now
-const walk = (d) => fs.readdirSync(d, { withFileTypes: true }).flatMap((e) => {
-  const p = path.join(d, e.name);
-  if (['.git', 'node_modules', 'private', 'dist', '__pycache__'].includes(e.name)) return []; // never published (also when linked)
-  if (e.isDirectory() || (e.isSymbolicLink() && fs.statSync(p).isDirectory())) return walk(p);
-  return [p];
-});
+const walk = (d) =>
+  fs.readdirSync(d, { withFileTypes: true }).flatMap((e) => {
+    const p = path.join(d, e.name);
+    if (['.git', 'node_modules', 'private', 'dist', '__pycache__'].includes(e.name)) return []; // never published (also when linked)
+    if (e.isDirectory() || (e.isSymbolicLink() && fs.statSync(p).isDirectory())) return walk(p);
+    return [p];
+  });
 const files = walk(REPO);
 for (const f of files) {
   const rel = path.relative(REPO, f);
-  if (/\.pdf$/i.test(f)) { problems.push(`PDF file in repo: ${rel}`); continue; }
+  if (/\.pdf$/i.test(f)) {
+    problems.push(`PDF file in repo: ${rel}`);
+    continue;
+  }
   if (skip(rel)) continue;
   const h = hits(fs.readFileSync(f, 'utf8'));
   if (h.length) report(rel, h);
 }
 
 // 2. every file in every commit, the commit messages and who made them
-let blobs = 0, commits = 0;
+let blobs = 0,
+  commits = 0;
 if (args.has('--history')) {
   const git = (...a) => execFileSync('git', ['-C', REPO, ...a], { maxBuffer: 1 << 30 }).toString();
   const seen = new Map();
@@ -85,14 +103,19 @@ if (args.has('--history')) {
   for (const [sha, p] of seen) {
     if (git('cat-file', '-t', sha).trim() !== 'blob') continue;
     blobs++;
-    if (/\.pdf$/i.test(p)) { problems.push(`history: a PDF was committed: ${p} (${sha.slice(0, 8)})`); continue; }
+    if (/\.pdf$/i.test(p)) {
+      problems.push(`history: a PDF was committed: ${p} (${sha.slice(0, 8)})`);
+      continue;
+    }
     if (skip(p)) continue;
     const buf = execFileSync('git', ['-C', REPO, 'cat-file', 'blob', sha], { maxBuffer: 1 << 30 });
     if (buf.includes(0)) continue;
     const h = hits(buf.toString('utf8'));
     if (h.length) report(`history: ${p} (${sha.slice(0, 8)})`, h);
   }
-  for (const rec of git('log', '--all', '--format=%H%x1f%an%x1f%ae%x1f%cn%x1f%ce%x1f%B%x1e').split('\x1e').filter((r) => r.trim())) {
+  for (const rec of git('log', '--all', '--format=%H%x1f%an%x1f%ae%x1f%cn%x1f%ce%x1f%B%x1e')
+    .split('\x1e')
+    .filter((r) => r.trim())) {
     const [sha, ...rest] = rec.trim().split('\x1f');
     commits++;
     const h = hits(rest.join('\n'));
@@ -111,10 +134,20 @@ if (args.has('--images')) {
       const txt = execFileSync('tesseract', [tmp, '-', '-l', 'eng+fra'], { stdio: ['ignore', 'pipe', 'ignore'] }).toString();
       const h = hits(txt);
       if (h.length) report(`image text: ${path.relative(REPO, f)}`, h);
-    } catch (e) { problems.push(`image not read: ${path.relative(REPO, f)}`); }
+    } catch (e) {
+      problems.push(`image not read: ${path.relative(REPO, f)}`);
+    }
   }
 }
 
-if (!havePrivate) console.log('No private/forbidden.txt here, so only the PDF check and the contract-reference check ran. Ask the owner for the private folder before publishing.');
-if (problems.length) { console.log('LEAK CHECK FAILED\n' + problems.join('\n')); process.exit(1); }
-console.log(`Leak check passed: ${files.length} files${blobs ? `, ${blobs} files in ${commits} commits` : ''}${images ? `, text in ${images} images` : ''}; ${terms.size} private terms and figures, plus contract references.`);
+if (!havePrivate)
+  console.log(
+    'No private/forbidden.txt here, so only the PDF check and the contract-reference check ran. Ask the owner for the private folder before publishing.',
+  );
+if (problems.length) {
+  console.log('LEAK CHECK FAILED\n' + problems.join('\n'));
+  process.exit(1);
+}
+console.log(
+  `Leak check passed: ${files.length} files${blobs ? `, ${blobs} files in ${commits} commits` : ''}${images ? `, text in ${images} images` : ''}; ${terms.size} private terms and figures, plus contract references.`,
+);

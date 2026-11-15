@@ -1,0 +1,30 @@
+# Runs every test suite on each change, with the made-up payslips and agreement only (no private file exists here).
+# The full leak check (private word list, history, images) stays a local step before publishing.
+name: tests
+on:
+  push:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: source
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: source/package-lock.json
+      - run: npm ci
+      - name: Every suite (build, rules, unlock, assistant, interface, privacy, site, full screen, accessibility, public leak check)
+        run: npm test
+        env:
+          CHROME: /usr/bin/google-chrome
+      - name: The built site matches the published files
+        if: github.ref == 'refs/heads/main'
+        run: node tools/compare_site.mjs

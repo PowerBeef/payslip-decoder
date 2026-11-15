@@ -16,18 +16,18 @@ R = random.Random(20261113)
 LINES_FR = ['rrq', 'le rrq', 'régime de rentes', 'rentes du québec', "l'ae", 'assurance-emploi', 'assurance emploi', 'le chômage',
             'rqap', "l'assurance parentale", 'impôt fédéral', "l'impôt du québec", 'impôt provincial', 'irf', 'irp',
             'cotisation syndicale', 'le syndicat', 'les cotisations syndicales', 'régime de retraite', 'fonds de pension', 'ma pension',
-            'assurance collective', 'ass. groupe', 'assurance médicaments', 'le dentaire', 'fonds humanitaire', 'fonds de solidarité ftq',
+            'assurance collective', 'ass. collective', 'assurance médicaments', 'le dentaire', 'le don de charité', 'fonds de solidarité ftq',
             'reer', 'prime de soir', 'prime de nuit', 'la prime de quart', 'temps supplémentaire', 'temps supp', 'temps et demi', 'temps double',
-            'heures régulières', 'hrs reg', 'le férié', 'congé férié', 'paie de vacances', 'les vacances', 'maladie', 'congé de maladie', 'deuil',
-            'rétro', 'la rétroactivité', 'prix de service', 'rrq2', 'la part de l’employeur', 'bq de vac payé', 'divers tx']
+            'heures régulières', 'heures rég', 'le férié', 'congé férié', 'paie de vacances', 'les vacances', 'maladie', 'congé de maladie', 'deuil',
+            'rétro', 'la rétroactivité', 'prix de service', 'rrq2', 'la part de l’employeur', 'banque de vacances payée', 'montant divers']
 LINES_EN = ['qpp', 'the qpp', 'pension plan', 'ei', 'employment insurance', 'qpip', 'parental insurance', 'federal tax', 'quebec tax',
             'provincial tax', 'income tax', 'union dues', 'the union', 'my pension', 'pension plan contribution', 'group insurance', 'life insurance',
-            'dental', 'medical insurance', 'humanity fund', 'ftq fund', 'rrsp', 'evening premium', 'night premium', 'shift premium', 'overtime',
+            'dental', 'medical insurance', 'charity donation', 'ftq fund', 'rrsp', 'evening premium', 'night premium', 'shift premium', 'overtime',
             'time and a half', 'double time', 'regular hours', 'holiday pay', 'stat holiday', 'vacation pay', 'sick pay', 'sick leave',
-            'bereavement', 'retro pay', 'back pay', 'service award', 'qpp2', 'employer contribution']
+            'bereavement', 'retro pay', 'back pay', 'award for years of service', 'qpp2', 'employer contribution']
 TERMS_FR = ['td1', 'tp-1015.3', 'le t4', 'le relevé 1', 'rl-1', 'brut', 'le net', 'cumul annuel', 'salaires assujettis', 'salaires imposables',
             'worktag', 'kronos', 'virement bancaire', "banque d'heures", 'montant total de la demande', 'retenues avant impôt', 'avantage imposable',
-            'le code (00, 123)', 'les codes entre parenthèses', 'ee / er', 'prov tb']
+            'le code (00, 123)', 'les codes entre parenthèses', 'ee / er', 'avantage imposable provincial']
 TERMS_EN = ['td1', 'the t4', 'rl-1', 'gross pay', 'net pay', 'year to date', 'ytd', 'taxable wages', 'pensionable earnings', 'insurable earnings',
             'worktag', 'bank transfer', 'banked hours', 'pre-tax deductions', 'taxable benefit', 'ee and er', 'claim amount']
 HOLIDAYS_FR = ['noël', 'le jour de l’an', 'la fête nationale', 'la saint-jean', 'la fête du travail', "l'action de grâce", 'pâques',
@@ -50,31 +50,46 @@ F['net'] = ([
     'combien j’ai reçu cette semaine', 'j’ai reçu combien', 'combien j’ai fait cette semaine', 'j’ai fait combien', 'combien on m’a payé',
     'combien m’a rapporté ma semaine', 'ma paie de cette semaine', 'combien je reçois', 'combien d’argent j’ai eu',
     "c'est combien ma paie", 'ma paie est de combien', 'combien vaut ma paie', 'quel est mon salaire net', 'mon salaire net',
+    'ce qui entre dans mon compte',
+    'combien tombe dans mon compte',
 ], [
     'what is the final amount', 'what do i end up with', "what's left after everything", 'final pay amount', 'how much cash do i get',
     'how much did i get', 'what is my net pay', 'how much did i take home', 'how much did i make this week', 'how much did i receive', 'what did i make', 'take home pay', 'net pay', 'how much was deposited',
     'how much money did i get', 'what did i get paid', 'how much is my paycheck', 'what is my paycheck', 'my net',
     'how much do i get after deductions', 'how much hits my bank', 'how much went into my account', 'how much was put in my bank', 'what got deposited in my account', 'what am i getting this week', 'how much is my pay',
+    'what comes into my account',
+    'what lands in my account',
+    'what goes into my bank account this time',
 ])
 F['gross'] = ([
     'total brut', 'le brut total', 'montant brut', 'combien en tout avant les déductions',
     'mon brut', 'ma paie brute', 'combien de brut', 'salaire brut', "c'est quoi mon brut", 'combien avant les déductions',
     'combien j’ai gagné avant impôt', 'mon salaire avant les retenues', 'combien je gagne brut', 'combien j’ai fait brut',
     'total des gains', 'combien j’ai gagné cette semaine', 'mes gains totaux', 'brut cette semaine', 'combien avant taxes',
+    "mon total avant qu'ils enlèvent quoi que ce soit",
+    'le total avant les retenues',
+    'ma paie avant les déductions',
 ], [
     'gross total', 'total gross amount', 'everything before deductions',
     'gross pay', 'what is my gross', 'how much did i earn before taxes', 'my gross', 'total earnings', 'how much before deductions',
     'how much did i make', 'how much did i earn', 'what did i earn this week', 'pay before tax', 'my salary before deductions',
+    'my total before they take anything',
+    'what i earned before anything came off',
 ])
 F['withheld'] = ([
     'total enlevé', 'combien a été enlevé au total', 'la somme des retenues',
     'combien on m’a enlevé', 'combien de déductions', 'total des retenues', 'combien ils m’ont pris', 'combien de retenues',
     'combien j’ai payé en déductions', 'le total des déductions', "combien d'argent ils gardent", 'combien me coûte les retenues',
     'combien y m’ont enlevé', 'total retenu', 'combien est retenu sur ma paie',
+    'le montant total retenu sur ma paie',
+    'combien a été déduit de ma paie en tout',
 ], [
     'how much came off', 'total taken off', 'sum of deductions',
     'how much was taken off', 'total deductions', 'how much did they take', 'how much was withheld', 'what are my total deductions',
     'how much do i lose to deductions', 'total withheld', 'how much comes off my pay',
+    'total amount deducted from my pay',
+    'how much was deducted from my pay in total',
+    'everything that was deducted',
 ])
 F['breakdown'] = ([
     'pourquoi ma paie est si basse', 'où va mon argent', 'explique ma paie', 'explique-moi mon talon', 'pourquoi mon net est plus bas que mon brut',
@@ -82,17 +97,30 @@ F['breakdown'] = ([
     "pourquoi c'est moins que prévu", 'comment ma paie est calculée', 'résume mon talon', 'explique-moi tout', 'fais-moi un résumé',
     'pourquoi y a autant de déductions', 'ma paie est trop basse pourquoi', 'je comprends pas ma paie',
     'pourquoi j’ai juste {M} piasses', 'pourquoi seulement {M} $', 'comment ça se fait que j’ai eu juste {M}',
+    "pourquoi j'ai eu si peu",
+    'pourquoi il me reste si peu',
+    'pourquoi ma paie est si petite',
+    'où est passé mon argent',
 ], [
     'why is my pay so low', 'where did my money go', 'where does my money go', 'where does my pay go', 'explain my payslip', 'break down my pay', 'why is net so much lower than gross',
     'how is my pay calculated', 'summarize my payslip', 'explain everything', 'why do i get so little', 'walk me through my pay',
     'i do not understand my paycheck', 'give me a summary',
+    'why did i get so little',
+    'why is there so little left',
+    'why is my pay so small',
+    'where did all my money go',
 ])
 F['deposit'] = ([
     'quand je suis payé', 'quand la paie rentre', 'dans quel compte', 'à quelle banque', 'date de paie', 'quand est le dépôt',
     "c'est déposé où", 'quel jour je reçois ma paie', 'la paie arrive quand', 'quand l’argent rentre', 'quelle date de paiement',
+    'dans quel compte ma paie a été versée',
+    'ma paie est allée dans quel compte',
 ], [
     'when do i get paid', 'when is payday', 'which account', 'which bank', 'pay date', 'when is the deposit', 'where is it deposited',
     'what day does my pay come in', 'when does the money arrive',
+    'which account did my pay go to',
+    'what account was my pay deposited in',
+    'which bank got my pay',
 ])
 F['period'] = ([
     'quelle période', 'période de paie', 'de quelle date à quelle date', 'ça couvre quels jours', 'quelle semaine ça couvre',
@@ -105,17 +133,26 @@ F['line_amount'] = ([
     'combien de {L}', 'combien {L}', "c'est combien {L}", 'combien j’ai payé de {L}', 'combien pour {L}', 'montant de {L}',
     'combien coûte {L}', 'combien ils m’ont pris pour {L}', '{L} combien', 'j’ai payé combien de {L}', 'combien j’ai eu de {L}',
     'combien on m’enlève pour {L}', 'combien j’ai reçu de {L}', 'combien me rapporte {L}', 'le montant {L}', 'combien vaut {L} sur ma paie',
+    "la {L} m'a donné combien",
+    "la {L} m'a rapporté combien",
+    'combien de {L} cette paie',
+    "j'ai eu combien de {L}",
 ], [
     'how much {L}', 'how much did i pay for {L}', 'how much is {L}', 'amount of {L}', 'what did {L} cost me', '{L} amount',
     'how much {L} did i get', 'how much was {L}', 'how much did they take for {L}', 'how much {L} this week',
+    'how much did my {L} come to', 'how much was my {L} this time', 'what did the {L} pay me', 'how much {L} did i get paid',
 ], 'L')
 F['explain'] = ([
     "c'est quoi {L}", "c'est quoi {T}", 'ça veut dire quoi {L}', 'ça veut dire quoi {T}', 'explique {L}', 'explique-moi {T}',
     'à quoi sert {L}', 'pourquoi je paie {L}', "qu'est-ce que {T}", "qu'est-ce que {L}", 'définition de {T}', 'que signifie {T}',
     'que veut dire {L}', '{T} ça sert à quoi', '{L} c’est quoi', 'pourquoi y a {L} sur mon talon', 'c’est quoi la ligne {L}',
+    "c'est quoi la ligne {L} sur mon talon",
 ], [
     'what is {L}', 'what is {T}', 'what does {T} mean', 'what does {L} mean', 'explain {L}', 'explain {T}', 'why do i pay {L}',
     'what is {T} for', 'meaning of {T}', 'define {T}', 'what is the {L} line', 'why is there {L} on my payslip',
+    "what's the {L}",
+    'what is the {L} on my payslip',
+    'what is this {L} line',
 ], 'LT')
 F['taxes_total'] = ([
     'le gouvernement me prend combien', 'combien les gouvernements prennent', 'combien va en impôts au total',
@@ -136,27 +173,43 @@ F['tax_rate'] = ([
 F['hours'] = ([
     "combien d'heures", "combien d'heures payées", 'mes heures', "j'ai fait combien d'heures", "nombre d'heures", 'heures cette semaine',
     "combien d'heures de {H2}", "combien d'heures j'ai travaillé", 'heures payées', 'total des heures', "chu payé pour combien d'heures",
+    "j'ai fait combien de {H2}", "combien de {H2} j'ai fait", "j'ai travaillé combien de temps",
 ], [
     'how many hours', 'hours paid', 'my hours', 'how many hours did i work', 'total hours', 'hours this week', 'how many {H2} hours',
-    'how many hours was i paid for',
+    'how many hours was i paid for', 'how much {H2} did i do', 'how much {H2} did i work', 'how many hours of {H2} did i get', 'how much time did i put in',
 ])
 F['rate'] = ([
     'mon taux est-il bon', 'suis-je dans la bonne classe', 'suis-je payé au bon taux', 'mon taux de la convention', 'je suis à quel échelon',
     'mon taux horaire', 'je fais combien de l’heure', 'combien je gagne de l’heure', 'mon salaire horaire', 'ma classe', 'mon niveau',
     'quelle classe je suis', 'je suis à quel niveau', 'mon taux est-il correct', 'mon taux', 'combien je suis payé de l’heure',
     "c'est quoi mon échelon", 'je suis payé au bon taux', 'quel est mon taux de base',
+    'mon taux de paie est-il correct',
+    'est-ce le bon taux horaire',
+    "c'est quoi mon taux à l'heure",
 ], [
     'am i paid the right rate', 'am i in the right class', 'is my hourly rate right', 'what step am i on',
     'my hourly rate', 'how much do i make an hour', 'what is my wage', 'my class', 'my level', 'what class am i', 'is my rate right',
     'base rate', 'what am i paid per hour', 'hourly wage',
+    'is my pay rate correct',
+    'is my rate of pay right',
+    'am i on the right hourly rate',
+    "what's my hourly",
+    'what is my hourly wage',
+    'my rate per hour',
 ])
 F['per_hour'] = ([
     'combien je fais net de l’heure', 'net à l’heure', 'combien il me reste par heure', 'moyenne à l’heure', 'combien je gagne vraiment de l’heure',
     'mon vrai taux horaire', 'après impôt combien de l’heure', 'combien de l’heure en poche', 'combien je fais de l’heure en net', 'de l’heure après tout', 'combien je fais de l’heure après les déductions',
     'de l’heure une fois les retenues enlevées', 'mon taux horaire net', 'combien je garde par heure travaillée',
+    "je fais combien de l'heure après les retenues",
+    "combien de l'heure une fois les impôts enlevés",
+    "net de l'heure, ça donne quoi",
 ], [
     'take home per hour', 'net per hour', 'how much do i really make per hour', 'average per hour', 'after tax per hour',
     'hourly after deductions', 'what i keep per hour', 'my net hourly rate',
+    'what do i make an hour after deductions',
+    'what is my hourly pay after taxes',
+    'how much per hour do i keep',
 ])
 F['sick_left'] = ([
     'combien de maladie il me reste', 'mes jours de maladie', 'il me reste combien de congés de maladie', 'banque de maladie',
@@ -177,9 +230,16 @@ F['vacation_left'] = ([
     'combien de vacances il me reste', 'mes vacances restantes', 'solde de vacances', "j'ai encore des vacances", 'banque de vacances',
     'combien de jours de vacances je peux prendre', 'mes vacances accumulées', 'combien de paie de vacances il reste',
     'il me reste-tu des vacances', 'vacances disponibles',
+    'mon solde de vacances est de combien',
+    "j'ai encore combien de vacances",
+    'combien de vacances dans ma banque',
+    'il me reste combien de vacances accumulées',
 ], [
     'how much vacation left', 'vacation balance', 'vacation days remaining', 'do i have vacation left', 'accrued vacation',
     'how much vacation pay is left',
+    'what is my vacation balance',
+    'how much vacation do i still have',
+    'how much is in my vacation bank',
 ])
 F['ytd'] = ([
     "depuis le début de l'année", 'cumul annuel', "combien j'ai gagné cette année", 'total de l’année', "combien d'impôt cette année",
@@ -195,11 +255,22 @@ F['maximums'] = ([
     "quand j'arrête de payer l'ae", "quand j'arrête de payer le rrq", 'maximum annuel', 'est-ce que je vais atteindre le maximum',
     'quand je vais avoir fini de payer {L}', 'plafond de {L}', 'le maximum du rrq', "j'ai-tu atteint le maximum", 'quand ma paie va augmenter en fin d’année',
     'pourquoi ma paie augmente en décembre', 'maximum assurance-emploi', 'cotisation maximale',
+    "quand j'ai fini de payer le rrq",
+    "quand j'ai fini de payer l'ae",
+    "quand j'ai fini de payer le rqap",
+    'je vais arrêter de payer le rrq quand',
+    "je vais arrêter de payer l'ae quand",
+    'je vais arrêter de payer le rqap quand',
+    'quand je vais avoir fini de payer le rqap',
+    'le rqap arrête quand',
 ], [
     'why does my pay go up at the end of the year', 'when will i stop paying into ei', 'when does the qpp stop',
     'when do i stop paying ei', 'when do i stop paying qpp', 'annual maximum', 'will i hit the max', 'when will {L} stop', '{L} maximum',
     'have i reached the maximum', 'why does my pay go up in december', 'maximum contribution', 'did i max out {L}', 'am i maxed out on {L}',
     'is {L} maxed out', 'have i hit the {L} cap', 'when will i max out',
+    'when will i stop paying qpip',
+    'when is qpip done for the year',
+    'qpip maximum reached when',
 ], 'L?')
 F['slips'] = ([
     'montant de la case {N}', 'case {N} combien', 'mon t4 va dire quoi', 'ce que je vais déclarer',
@@ -208,15 +279,29 @@ F['slips'] = ([
 ], [
     'box {N} amount', 'what is in box {N}', 'what will i report on my taxes',
     'my t4', 'my rl-1', 'box 14', 'what goes on my t4', 'tax slips', 'for my tax return', 'box {N} on the t4', 'what will my t4 say',
+    'when am i done paying qpp',
+    'when am i done paying ei',
+    'when am i done paying qpip',
+    'when do i stop paying qpp',
+    'when do i stop paying ei',
+    'when do i stop paying qpip',
+    'when will qpp come off for the last time',
+    'when will ei come off for the last time',
+    'when will qpip come off for the last time',
 ])
 F['employer'] = ([
     "combien l'employeur paie", "la part de l'employeur", "ce que l'employeur met", "l'employeur contribue combien",
     'cotisations de l’employeur', 'avantages payés par la compagnie', 'combien la compagnie paie pour moi',
     'la part employeur de la pension', 'la part employeur du régime de retraite', 'combien l’employeur met dans ma pension', 'la part patronale',
     'ce que la compagnie paie en assurances', 'cotisation patronale',
+    'combien la compagnie verse pour moi',
+    'ce que la compagnie met dans mon régime',
+    'la part que la compagnie paie',
 ], [
     'how much does my employer pay', 'employer contributions', 'what does the company pay for me', 'employer share', 'employer match',
     'employer share of my pension', 'how much does the company put in my pension', 'what the employer pays for insurance',
+    'how much does the company put in for me',
+    'what the company pays into my plan',
 ])
 F['checks'] = ([
     'la paie s’est-tu trompée', 'erreur de la paie', 'ils m’ont-tu bien payé', 'est-ce que je suis bien payé', 'y a-tu un problème avec ma paye',
@@ -224,19 +309,29 @@ F['checks'] = ([
     'ils se sont-tu trompés', 'y a-tu une erreur', 'est-ce que je me suis fait voler', 'ma paie est-tu correcte', 'tout est beau sur mon talon',
     'des problèmes sur ma paie', 'les vérifications', 'est-ce que les calculs sont bons', 'est-ce qu’il y a une erreur sur mon talon',
     'une erreur dans ma paie', 'ma paie a-tu été bien faite', 'c’est-tu le bon montant', 'je pense qu’il y a une erreur', 'mon talon est-il exact',
+    'ma paie a-t-elle été bien calculée',
+    'est-ce que ma paie est bien calculée',
+    'mon talon est-il bien calculé',
 ], [
     'did payroll mess up', 'did they pay me right', 'was there an error', 'am i paid correctly', 'is something wrong with my pay',
     'is my pay correct', 'are there any errors', 'check my pay', 'is everything right', 'did they make a mistake', 'any problems with my payslip',
     'was i underpaid', 'do the numbers add up', 'is there a mistake on my payslip', 'was my pay calculated right', 'is this the right amount',
     'i think there is an error', 'is my payslip accurate', 'mistake on my pay',
+    'was my pay calculated right',
+    'is my pay calculated correctly',
 ])
 F['retro'] = ([
     'pourquoi il y a de la rétro', 'rétro sur mon talon', 'montant rétroactif pourquoi',
     'rétroactivité', "j'ai eu de la rétro", 'paie rétroactive', "c'est quoi la rétro", 'montant rétroactif', 'rappel de salaire',
     'pourquoi j’ai un montant rétro', 'la rétro est pour quoi',
+    'le montant de rétro',
+    'combien de rétro sur ma paie',
+    "j'ai eu combien de rétroactif",
 ], [
     'why is there back pay', 'back pay on my stub', 'retro on my payslip',
     'retro pay', 'back pay', 'retroactive pay', 'why do i have retro', 'what is the retro amount',
+    'how much back pay did i get',
+    'what is the retro amount on my pay',
 ])
 F['compare'] = ([
     'pourquoi mon net est plus haut cette semaine', "pourquoi j'ai plus cette semaine", 'pourquoi ma paie est plus grosse', 'pourquoi j’ai moins cette fois', 'ma paie a changé pourquoi',
@@ -245,12 +340,17 @@ F['compare'] = ([
     'pourquoi ma paie a baissé', 'pourquoi ma paie a monté', 'pourquoi {L} est plus haut que la semaine passée',
     'pourquoi {L} a changé', 'compare les deux', 'c’est quoi la différence', 'comparaison avec la paie précédente',
     'pourquoi j’ai moins cette semaine', 'pourquoi ma paie est plus basse que d’habitude', 'pourquoi j’ai eu moins que la dernière paie',
+    'quoi de différent depuis ma dernière paie',
+    "qu'est-ce qui est différent de la dernière paie",
 ], [
     'why is my net higher this week', 'why did my net go up', 'why is my pay bigger', 'why less this time', 'my pay changed why', 'why did my paycheck change',
     'what changed', 'why is my pay different from last week', 'compare my payslips', 'compare with last pay', 'compare this pay with the last one', 'compare with my previous payslip',
     'how does this pay compare to last week', 'difference between this payslip and the previous', 'what changed compared to my last pay', 'why did i get less than last week',
     'why more than last time', 'difference between my two pays', 'why did my pay drop', 'why is {L} higher than last week',
     'why did {L} change', 'compare the two', 'why is this pay lower than usual',
+    "what's different from my last paycheck",
+    'what is different from last pay',
+    'what changed from my last paycheck',
 ], 'L?')
 F['holidays'] = ([
     'prochain férié', 'quand est le prochain congé férié', 'jours fériés', 'liste des fériés', "c'est quand {HO}", '{HO} est-tu férié',
@@ -266,15 +366,21 @@ F['vacation_rule'] = ([
     'combien de semaines de vacances', "j'ai droit à combien de vacances", 'vacances après {Y} ans', 'avec {Y} ans d’ancienneté combien de vacances',
     'pourcentage de vacances', 'combien de vacances par année', 'paie de vacances calculée comment', 'quand j’ai droit à 3 semaines',
     'table des vacances', 'vacances selon l’ancienneté',
+    'combien de vacances après {Y} ans',
+    "j'ai droit à combien de vacances après {Y} ans",
 ], [
     'how many weeks of vacation', 'vacation entitlement', 'vacation after {Y} years', 'with {Y} years of service how much vacation',
     'vacation percentage', 'how is vacation pay calculated', 'when do i get 3 weeks', 'vacation table',
+    'how much vacation after {Y} years',
+    'vacation after {Y} years of service',
 ], 'Y?')
 F['sick_rule'] = ([
     'combien de jours de maladie par année', "j'ai droit à combien de maladies", 'règle des congés de maladie', 'maladie non prise payée',
     'quand les maladies sont renouvelées', 'les maladies sont payées quand', 'combien de maladies dans la convention',
+    "c'est quoi la règle des maladies", 'comment marchent les congés de maladie', 'la règle pour les congés de maladie', 'les maladies ça fonctionne comment',
 ], [
     'how many sick days per year', 'sick day rules', 'are unused sick days paid', 'when do sick days renew', 'sick leave entitlement',
+    'what is the rule for sick days', 'how do sick days work', 'what are the sick leave rules',
 ])
 F['overtime_rule'] = ([
     'le temps supp est payé comment', 'quand est-ce que c’est temps double', 'temps et demi quand', 'règle du temps supplémentaire',
@@ -296,9 +402,13 @@ F['wage_scale'] = ([
     'échelle salariale', 'combien gagne une classe {C}', 'taux de la classe {C} niveau {LV}', 'quel taux pour la classe {C}',
     'si je monte de classe combien', 'les taux de la convention', 'combien paie la classe supérieure', 'niveau {LV} classe {C} combien',
     'échelle des salaires', 'grille salariale',
+    'si je monte en classe {C} je vais faire combien',
+    'le taux de la classe {C}',
+    'combien paie la classe {C}',
 ], [
     'wage scale', 'how much does class {C} make', 'class {C} level {LV} rate', 'pay grid', 'rates in the agreement',
     'what if i move up a class', 'salary scale',
+    "what's the rate for class {C}", 'how much does class {C} pay', 'if i move up to class {C} what would i make',
 ], 'C?')
 F['agreement'] = ([
     'ma convention collective', 'quand expire la convention', "c'est quoi la convention", 'la convention finit quand',
@@ -311,9 +421,15 @@ F['fact'] = ([
     'allocation de souliers', 'combien pour les bottes', 'allocation de repas', 'prime d’ancienneté', 'prime de leader',
     'indemnité hebdomadaire', 'assurance invalidité', 'renvoyé faute de travail', 'minimum d’heures payées si on me renvoie', 'combien la compagnie paie l’assurance',
     'part de l’assurance collective', 'banque de temps supplémentaire maximum', 'souliers de sécurité', 'repas en temps supp',
+    "prime d'ancienneté après {Y} ans",
+    "combien de prime d'ancienneté",
+    'la prime de leader',
 ], [
     'safety shoes allowance', 'boot allowance', 'meal allowance', 'seniority premium', 'leader premium', 'weekly indemnity',
     'disability benefit', 'sent home for lack of work', 'insurance cost split', 'maximum banked overtime',
+    'seniority premium after {Y} years',
+    'how much is the seniority premium',
+    'lead hand premium',
 ])
 F['codes'] = ([
     'le 03 dans (03, 123)', 'le premier chiffre entre parenthèses', 'le deuxième chiffre entre parenthèses', 'pourquoi (00, 123) et (03, 123)',
@@ -338,18 +454,33 @@ F['help'] = ([
 F['privacy'] = ([
     'mes données sont envoyées', 'est-ce que mon talon est envoyé quelque part', 'c’est privé', 'qui voit ma paie', 'est-ce sécuritaire',
     'mes infos restent où', 'tu envoies mes données', 'est-ce que mon employeur voit ça', 'est-ce que mon talon est téléversé', 'mes questions sont-elles enregistrées',
-    'est-ce que ça part sur internet', 'tu gardes mes infos',
+    'est-ce que ça part sur internet', 'tu gardes mes infos', 'quelqu’un peut voir ma paie', 'est-ce que d’autres peuvent voir mes infos', 'mon talon est-il visible par quelqu’un',
+    'qui a accès à mes infos',
+    'qui peut voir mes données',
+    'who has access to my data',
+    'who can access my information',
 ], ['is my data sent', 'is this private', 'who can see my payslip', 'is it safe', 'where does my data go', 'does my employer see this',
-    'does this upload my payslip', 'is my payslip uploaded', 'are my questions saved', 'do you keep my data', 'does it go online'])
+    'does this upload my payslip', 'is my payslip uploaded', 'are my questions saved', 'do you keep my data', 'does it go online',
+    'can anyone else see my pay', 'can other people see my payslip'])
 F['other'] = ([
     'qui a gagné la partie hier', 'capitale de la france', 'comment changer un pneu', 'je veux commander une pizza', 'combien coûte un iphone', 'quel âge a la terre', 'trouve-moi un restaurant', 'joue de la musique', 'réserve un vol', "c'est quoi l'intelligence artificielle", 'aide-moi avec mes devoirs', 'combien de calories dans une pomme', 'comment faire du pain', 'meilleur téléphone', 'qui est le président', 'quelle est la population du québec', 'conseils pour dormir', 'horaire de l’autobus', 'prix de l’essence', 'comment investir en bourse', 'traduis bonjour en anglais', 'raconte une histoire', 'ouvre netflix', 'appelle maman',
     'quel temps fait-il', 'raconte une blague', "c'est qui le premier ministre", 'recette de pâté chinois', 'résultat du hockey',
     'quelle heure est-il', 'je veux un hamburger', 'traduis ce texte', 'écris un poème', 'combien coûte une auto', 'où est le walmart',
     'les canadiens ont gagné', 'comment réparer mon char', 'meilleur film', 'la météo demain', 'parle-moi de toi', 'combien font 2 plus 2',
+    'quel film regarder ce soir',
+    'quoi faire ce soir',
+    'il va faire froid cette nuit',
+    "qu'est-ce qu'on mange ce soir",
+    'la partie de hockey ce soir',
 ], [
     'who won the game last night', "what's the capital of france", 'how do i change a tire', 'order a pizza', 'how much is an iphone', 'how old is the earth', 'find me a restaurant', 'book a flight', 'what is artificial intelligence', 'help with my homework', 'calories in an apple', 'how to bake bread', 'best phone', 'who is the president', 'population of canada', 'tips to sleep better', 'bus schedule', 'gas prices', 'how to invest in stocks', 'tell me a story', 'open netflix', 'call mom', 'stock market today',
     'what is the weather', 'tell me a joke', 'who is the prime minister', 'recipe for lasagna', 'hockey score', 'what time is it',
     'write a poem', 'how much is a car', 'where is walmart', 'best movie', 'fix my car', 'what is 2 plus 2', 'play music',
+    'what movie should i watch tonight',
+    'what should i do tonight',
+    'is it going to be cold tonight',
+    'what is for supper',
+    'the game tonight',
 ])
 
 H2_FR = ['temps supp', 'temps supplémentaire', 'férié', 'vacances', 'maladie', 'régulières', 'soir', 'nuit']

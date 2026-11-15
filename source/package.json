@@ -5,14 +5,19 @@
   "scripts": {
     "build": "node build.mjs",
     "publish-site": "PUBLISH=1 node build.mjs",
+    "test": "node tests/all.mjs",
+    "fixtures": "node tests/fixtures.mjs",
     "leaks": "node tools/leak_scan.mjs",
-    "test:analyze": "node tests/analyze.mjs",
+    "test:rules": "node tests/rules.mjs",
+    "test:unlock": "node tests/unlock.mjs",
+    "test:assistant": "node tests/assistant.mjs",
     "test:ui": "node tests/ui.mjs",
+    "test:privacy": "node tests/privacy.mjs",
     "test:pages": "node tests/pages.mjs && node tests/pages-standalone.mjs",
     "test:fullscreen": "node tests/fullscreen.mjs",
-    "test:assistant": "node tests/assistant.mjs",
-    "train": "cd assistant && python3 train.py",
-    "test:rules": "node tests/rules.mjs"
+    "test:a11y": "node tests/a11y.mjs",
+    "test:analyze": "node tests/analyze.mjs",
+    "train": "cd assistant && python3 train.py"
   },
   "dependencies": {
     "@fontsource/barlow": "^5.3.0",
@@ -21,7 +26,10 @@
     "puppeteer-core": "^25.17.0"
   },
   "devDependencies": {
+    "axe-core": "^4.14.0",
     "jsqr": "^1.4.0",
+    "pdf-lib": "^1.17.1",
+    "prettier": "3.10.1",
     "qrcode-generator": "^1.5.2"
   }
 }
