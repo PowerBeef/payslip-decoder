@@ -488,7 +488,9 @@
       const l0 = ls[0];
       if (l0.type === 'earning') {
         const h = sum(ls.map((l) => l.hours));
-        return k.earnLine(L.kind(id), L.money(amt), h ? L.h(h) : '', ls.length === 1 && l0.rate ? L.money(l0.rate) : '', L.money(ytd));
+        // one rate when every line has the same one (a shift premium split by department is still one rate)
+        const rates = [...new Set(ls.filter((l) => l.amount).map((l) => l.rate))];
+        return k.earnLine(L.kind(id), L.money(amt), h ? L.h(h) : '', rates.length === 1 && rates[0] ? L.money(rates[0]) : '', L.money(ytd));
       }
       if (l0.type === 'tax')
         return k.taxLine(

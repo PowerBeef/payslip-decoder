@@ -1838,6 +1838,13 @@ body.at-rest .tabs {
 .grp-h + .li {
   border-top: 0;
 }
+/* a shift premium shown as one weekly total: its label, hours × rate and check sit in the header */
+.grp.one .grp-h .li-o {
+  margin-top: 8px;
+}
+.grp.one .grp-h .chips {
+  margin-top: 8px;
+}
 .tot {
   display: flex;
   align-items: baseline;

@@ -527,6 +527,32 @@
       out.push(chip(PD.agText(A.agreement, L.lang, 'shiftRef') || L.kind(e.cat), 'ok', I.check));
     return out.join('');
   }
+  /* Shift premiums (evening, night) are the same for every class and level, so lines split by department or job
+     add nothing: they are shown as one total per rate. Back pay for an earlier period stays on its own line. */
+  const SHIFT = ['evening', 'night'];
+  function mergePremiums(rows, byCat = false) {
+    const out = [];
+    for (const e of rows) {
+      if (!SHIFT.includes(e.cat) || e.retro) {
+        out.push(e);
+        continue;
+      }
+      const m = out.find((x) => x.merged && x.cat === e.cat && (byCat || x.rate === e.rate));
+      if (!m) {
+        out.push({ ...e, merged: 1, descs: [e.desc] });
+        continue;
+      }
+      m.merged++;
+      m.hours = r2((m.hours || 0) + (e.hours || 0));
+      m.amount = r2((m.amount || 0) + (e.amount || 0));
+      m.ytdHours = r2((m.ytdHours || 0) + (e.ytdHours || 0));
+      m.ytd = r2((m.ytd || 0) + (e.ytd || 0));
+      if (!m.descs.includes(e.desc)) m.descs.push(e.desc);
+      if (m.rate !== e.rate) m.rate = null;
+    }
+    out.forEach((x) => x.descs && (x.desc = x.descs.join(', ')));
+    return out;
+  }
   function earningsCard(A, L) {
     const s = L.s;
     const cur = A.earnings.filter((e) => e.current);
@@ -548,15 +574,25 @@
       'unpaid',
     ];
     const groups = order.map((c) => [c, cur.filter((e) => e.cat === c)]).filter(([, r]) => r.length);
+    const calcOf = (e) => (e.hours && e.rate ? `${L.h(e.hours)} × ${L.money(e.rate)}` : e.dates ? L.range(e.dates.from, e.dates.to) : '');
     const body = groups
       .map(([c, rows]) => {
         const h = sum(rows.map((e) => e.hours)),
           a = sum(rows.map((e) => e.amount));
-        return `<div class="grp"><div class="grp-h"><div><h3>${esc(L.kind(c))}</h3><p>${esc(L.expl(c))}</p></div><div class="grp-a">${h ? `<span>${esc(L.h(h))}</span>` : ''}<b>${esc(L.money(a))}</b></div></div>
-        ${rows.map((e) => li({ name: e.desc, calc: e.hours && e.rate ? `${L.h(e.hours)} × ${L.money(e.rate)}` : e.dates ? L.range(e.dates.from, e.dates.to) : '', amt: L.money(e.amount), chips: earningChips(e, A, L), cls: 'sm' })).join('')}</div>`;
+        const lines = SHIFT.includes(c) ? mergePremiums(rows) : rows;
+        // a shift premium at one rate for the week: the header is the total, with the payslip's label, hours × rate and the check
+        const one = SHIFT.includes(c) && lines.length === 1 && lines[0].merged ? lines[0] : null;
+        const inHead = one
+          ? `<div class="li-o"><span class="o">${esc(one.desc)}</span><span class="c">${esc(calcOf(one))}</span></div>${earningChips(one, A, L) ? `<div class="chips">${earningChips(one, A, L)}</div>` : ''}`
+          : '';
+        return `<div class="grp${one ? ' one' : ''}" data-cat="${c}"><div class="grp-h"><div><h3>${esc(L.kind(c))}</h3><p>${esc(L.expl(c))}</p>${inHead}</div><div class="grp-a">${h ? `<span>${esc(L.h(h))}</span>` : ''}<b>${esc(L.money(a))}</b></div></div>
+        ${one ? '' : lines.map((e) => li({ name: e.desc, calc: calcOf(e), amt: L.money(e.amount), chips: earningChips(e, A, L), cls: 'sm' })).join('')}</div>`;
       })
       .join('');
-    const past = A.earnings.filter((e) => !e.current);
+    const past = mergePremiums(
+      A.earnings.filter((e) => !e.current),
+      true,
+    );
     const pastT = past.length
       ? `<details class="more"><summary>${I.chev}${esc(s.earlierThisYear(past.length))}</summary><div class="lis">${past.map((e) => li({ name: earningName(e, L), orig: e.desc, amt: L.money(e.ytd), sub: e.ytdHours ? L.h(e.ytdHours) : '', cls: 'sm' })).join('')}</div></details>`
       : '';
@@ -845,7 +881,8 @@
         { intro: esc(s.historyIntro) },
       );
     }
-    const all = `<details class="more card-like"><summary>${I.chev}${esc(s.allLines)} (${A.earnings.length})</summary><div class="lis">${A.earnings.map((e) => li({ name: earningName(e, L), orig: e.desc, amt: L.money(e.ytd), sub: e.ytdHours ? L.h(e.ytdHours) : '', cls: 'sm' })).join('')}</div></details>`;
+    const allLines = mergePremiums(A.earnings, true); // a shift premium is one line for the year
+    const all = `<details class="more card-like"><summary>${I.chev}${esc(s.allLines)} (${allLines.length})</summary><div class="lis">${allLines.map((e) => li({ name: earningName(e, L), orig: e.desc, amt: L.money(e.ytd), sub: e.ytdHours ? L.h(e.ytdHours) : '', cls: 'sm' })).join('')}</div></details>`;
     const N = s.yearNav;
     const secs = [
       ['y-off', N.off, toff],

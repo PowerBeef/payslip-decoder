@@ -402,6 +402,30 @@ ok(
   'two payslips loaded, welcome gone',
   await ev(() => window.PDUI.state.slips.length === 2 && !document.querySelector('.example') && !document.querySelector('.welcome')),
 );
+// a shift premium is the same for every class and level: one weekly total, not a line per department
+{
+  const prem = await ev(() => {
+    const S = window.PDUI.state,
+      A = S.slips[S.cur].A;
+    const cats = ['evening', 'night'].filter((c) => A.earnings.some((e) => e.current && e.cat === c));
+    return cats.map((c) => {
+      const g = document.querySelector(`#c-earnings .grp[data-cat="${c}"]`);
+      const rows = A.earnings.filter((e) => e.current && e.cat === c);
+      const h = rows.reduce((t, e) => t + (e.hours || 0), 0);
+      return {
+        c,
+        lines: rows.length,
+        one: !!g && g.classList.contains('one') && !g.querySelector('.li'),
+        hours: !!g && g.querySelector('.grp-h .c').textContent.includes(String(h).replace('.', ',')),
+      };
+    });
+  });
+  ok(
+    'a shift premium split over several lines shows as one weekly total with its hours',
+    prem.length > 0 && prem.some((x) => x.lines > 1) && prem.every((x) => x.one && x.hours),
+    JSON.stringify(prem),
+  );
+}
 ok(
   'time off panel: sick time never negative, banked hours and vacation shown',
   await ev(() => {
