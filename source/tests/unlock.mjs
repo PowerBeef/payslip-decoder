@@ -2,8 +2,10 @@
 //   node tests/unlock.mjs
 // Always runs the 9 header spellings against the made-up test pack (fixtures/test-pack.mjs). When the private folder
 // holds unlock-cases.json (the real employer word and city, never committed), the same 9 run against the real pack.
+// Then the fallback rule (the merged city's name applies the agreement only to pay on its scales), on the made-up
+// pack, and on the real one with PAYSLIP=/path/real.pdf.
 import fs from 'fs';
-import { fixtures, PD } from './fixtures.mjs';
+import { fixtures, PD, makePayslip, VARIANTS } from './fixtures.mjs';
 import { TEST_PACK } from './fixtures/test-pack.mjs';
 
 const ok = (name, cond, extra = '') => {
@@ -57,6 +59,33 @@ ok(
   )?.id === TEST_PACK.id,
 );
 
+/* the merged city's name is only a fallback: another workplace of the same employer may print it too, so the agreement
+   then applies only to pay whose hourly rates are on its scales */
+async function fallback(label, packs, parsed, town, other) {
+  console.log(`\n${label}`);
+  const variant = (city, otherRates) => {
+    const p = structuredClone(parsed);
+    p.header.companyAddress = `100 Some Avenue ${city}, QC J0J 0J0`;
+    if (otherRates)
+      for (const r of p.sections.flatMap((x) => x.rows))
+        if (r.values && r.values.rate > 5) r.values.rate = Math.round((r.values.rate + 0.37) * 100) / 100;
+    return p;
+  };
+  for (const [n, city, otherRates, applies] of [
+    ['the town, rates on the scales', town, false, true],
+    ['the town, other rates (the rate checks flag them)', town, true, true],
+    ['the merged city, rates on the scales', other, false, true],
+    ['the merged city, other rates (another workplace): the app stays generic', other, true, false],
+  ]) {
+    PD.PACKS = packs.map((p) => ({ ...p }));
+    PD.AGREEMENTS = [];
+    const p = variant(city, otherRates);
+    await PD.unlockFor(p.header);
+    ok(`${n}: agreement ${applies ? 'applies' : 'not applied'}`, !!PD.analyze(p).agreement === applies);
+  }
+}
+await fallback('Fallback spelling, made-up pack', [F.pack], makePayslip(VARIANTS.payslip()), 'Lac-Imaginaire', 'Ville-Imaginaire');
+
 const priv = new URL('../private/unlock-cases.json', import.meta.url);
 if (fs.existsSync(priv)) {
   const c = JSON.parse(fs.readFileSync(priv, 'utf8'));
@@ -69,4 +98,10 @@ if (fs.existsSync(priv)) {
     c.otherCity,
   );
   ok('the slowest try stays under 1 second on this machine', slow < 1000, `${Math.round(slow)} ms`);
+  // with a real payslip (kept outside the repo), the fallback rule on the real pack
+  if (process.env.PAYSLIP) {
+    const pdfjs = await import('../node_modules/pdfjs-dist/legacy/build/pdf.mjs');
+    const { pages } = await PD.extractPages(pdfjs, new Uint8Array(fs.readFileSync(process.env.PAYSLIP)));
+    await fallback('Fallback spelling, real pack and payslip', real, PD.parsePayslip(pages), cap(c.city), c.otherCity);
+  }
 } else console.log('\n(no private/unlock-cases.json: the real pack’s spellings are not tested here)');

@@ -521,11 +521,30 @@
      header (the Name / Company labels). Pages before the first header, and pages without one (payment information),
      go with the payslip before them. Returns the page numbers (from 0) of each payslip. */
   PD.splitPayslips = function (pages) {
-    const starts = [];
-    pages.forEach((pg, i) => {
+    // A page with its own header (the Name and Company labels) starts a payslip. The exception is a long payslip that
+    // prints its header again on the next page: same dates and numbers under the labels (period, pay date, employee
+    // and cheque numbers) and no summary table (gross and net pay), which only the first page of a payslip has.
+    const DATE = /^\d{1,2}[/.-]\d{1,2}[/.-]\d{2,4}$|^\d{4}-\d{2}-\d{2}$/;
+    const GROSS = ['paie brute', 'gross pay', 'salaire brut'],
+      NET = ['paie nette', 'net pay', 'salaire net'];
+    const heads = pages.map((pg, n) => {
       const lines = buildLines([pg]);
-      if (lines.some((ln) => ln.items.some((it) => isLabel(it.str, L.name)) && ln.items.some((it) => isLabel(it.str, L.company))))
-        starts.push(i);
+      const i = lines.findIndex(
+        (ln) => ln.items.some((it) => isLabel(it.str, L.name)) && ln.items.some((it) => isLabel(it.str, L.company)),
+      );
+      if (i < 0) return null;
+      const ids = lines
+        .slice(i, i + 6)
+        .filter((ln) => ln.gy - lines[i].gy < 40)
+        .flatMap((ln) => ln.items.map((it) => it.str.trim()))
+        .filter((t) => DATE.test(t) || /^\d{4,}$/.test(t));
+      const summary = lines.some((ln) => ln.items.some((it) => isLabel(it.str, GROSS)) && ln.items.some((it) => isLabel(it.str, NET)));
+      return { sig: ids.length ? ids.join('|') : 'page ' + n, summary };
+    });
+    const starts = [];
+    heads.forEach((h, i) => {
+      const prev = starts.length && heads[starts[starts.length - 1]];
+      if (h && !(prev && h.sig === prev.sig && !h.summary)) starts.push(i);
     });
     if (starts.length <= 1) return [pages.map((_, i) => i)];
     starts[0] = 0;

@@ -78,6 +78,11 @@ export async function fixtures(dir = process.env.FIXTURES || '/tmp/pd-fixtures')
   fs.writeFileSync((out.bad = path.join(dir, 'bad.pdf')), await payslipPdf(bad));
   // two payslips saved in one file
   fs.writeFileSync((out.merged = path.join(dir, 'merged.pdf')), await payslipPdf([parsed.week2, parsed.payslip]));
+  // one long payslip that goes on to a second page and prints its header again there
+  fs.writeFileSync(
+    (out.long = path.join(dir, 'long.pdf')),
+    await payslipPdf(parsed.payslip, { breakAfterEarnings: true, repeatHeader: true }),
+  );
   // files that aren't a readable payslip
   fs.writeFileSync((out.other = path.join(dir, 'other.pdf')), await otherPdf());
   fs.writeFileSync((out.locked = path.join(dir, 'locked.pdf')), await lockedPdf(fs.readFileSync(out.payslip)));

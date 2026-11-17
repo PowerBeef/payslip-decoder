@@ -255,11 +255,14 @@
       ids: out,
       line: out.find((x) => !x.startsWith('t:')) || null,
       term: out.find((x) => x.startsWith('t:')) || null,
-      box: n(/ (?:case|box|code|boite) ([0-9]{1,3}|[a-z]) /),
+      // "box 17A", "case B.A", "case B-2" arrive as "17a", "b a", "b 2": kept without spaces
+      box: (n(/ (?:case|box|code|boite) ([0-9]{1,3}(?: ?[a-z])?|[a-z](?: [a-z0-9])?) /) || '').replace(/ /g, '') || null,
       cls: n(/ (?:classe|class) ([0-9]{1,2}) /),
       level: n(/ (?:niveau|level|echelon) ([abc]) /),
       years: n(/ ([0-9]{1,2}) (?:ans|an|years|year|yrs) /),
       code: /\( ?[0-9]{2} ?, ?[0-9]+ ?\)/.test(text) || / [0-9]{2} [0-9]{3} /.test(q),
+      // double time is overtime at twice the rate: asked about on its own, it gets only those lines
+      dbl: / (temps double|double time|time double|taux double|temps x ?2|payees? double|paye double|heures doubles?) /.test(q),
     };
   }
   // Québec's paid holidays by their usual names (public names, not agreement data), most specific first:
@@ -413,6 +416,7 @@
         rate: e.rate,
         ytd: e.ytd,
         ytdHours: e.ytdHours,
+        mult: e.mult,
       }));
     }
     if (TAXK.includes(id))
@@ -480,8 +484,8 @@
     const intent = d.conf < 0.35 && !['greeting', 'thanks'].includes(d.intent) ? 'unsure' : d.intent;
     out.intent = intent;
     const e = d.ents;
-    const lineText = (id) => {
-      const ls = lines(A, id);
+    const lineText = (id, only) => {
+      const ls = lines(A, id).filter(only || (() => true));
       if (!ls.length) return null;
       const amt = r2(sum(ls.map((l) => l.amount))),
         ytd = r2(sum(ls.map((l) => l.ytd)));
@@ -490,7 +494,13 @@
         const h = sum(ls.map((l) => l.hours));
         // one rate when every line has the same one (a shift premium split by department is still one rate)
         const rates = [...new Set(ls.filter((l) => l.amount).map((l) => l.rate))];
-        return k.earnLine(L.kind(id), L.money(amt), h ? L.h(h) : '', rates.length === 1 && rates[0] ? L.money(rates[0]) : '', L.money(ytd));
+        return k.earnLine(
+          only ? k.doubleName : L.kind(id),
+          L.money(amt),
+          h ? L.h(h) : '',
+          rates.length === 1 && rates[0] ? L.money(rates[0]) : '',
+          L.money(ytd),
+        );
       }
       if (l0.type === 'tax')
         return k.taxLine(
@@ -583,6 +593,14 @@
           if (id === 't:codes') link(s.guideNav.codes, 'guide:codes');
           break;
         }
+        // double time: the overtime lines at twice the rate, or say there are none and give the rest of the overtime
+        if (id === 'overtime' && e.dbl && intent === 'line_amount') {
+          const dbl = lineText(id, (l) => (l.mult || 1.5) >= 2);
+          P(dbl || k.noDouble);
+          if (!dbl) P(lineText(id));
+          link(k.see(L.kind(id)), goFor(id));
+          break;
+        }
         const text = lineText(id);
         if (intent === 'explain' || !text) P(`${L.kind(id)}${lang === 'fr' ? ' : ' : ': '}${L.expl(id) || k.noExpl}`);
         P(text || k.notOnSlip(L.kind(id)));
@@ -664,7 +682,7 @@
           const v = T.vacation;
           P(
             v.likelyDollars
-              ? k.vacLeft(L.money(v.balance), v.hours != null ? L.num(Math.round(v.hours * 10) / 10) : '')
+              ? k.vacLeft(L.money(v.balance), v.hours != null ? L.num(Math.round(v.hours * 10) / 10) : '', v.dollars)
               : k.vacLeftRaw(L.num(v.balance)),
           );
           if (v.accruing != null) P(k.vacAccruing(v.likelyDollars ? L.money(v.accruing) : L.num(v.accruing)));
@@ -707,11 +725,18 @@
           P(k.noSlips);
           break;
         }
-        const want = e.box ? all.filter((x) => String(x[1]).toLowerCase() === e.box) : [];
+        // the slip's own letters ("B.A") against the asked ones ("ba"); "box B" on a 2024 slip finds B.A and B.B
+        const key = (b) =>
+          String(b)
+            .toLowerCase()
+            .replace(/[^a-z0-9]/g, '');
+        const exact = e.box ? all.filter((x) => key(x[1]) === e.box) : [];
+        const want = exact.length ? exact : e.box ? all.filter((x) => key(x[1]).startsWith(e.box)) : [];
         const rows = (want.length ? want : all.filter((x) => ['empIncome', 'fedTax', 'qcTax', 'qpp', 'ei'].includes(x[2]))).map(
           (x) => `${x[0]} ${lang === 'fr' ? 'case' : 'box'} ${x[1]} (${s.slipName[x[2]] || x[2]}) ${L.money(x[3])}`,
         );
         P(k.slips(L.date(A.meta.payDate)));
+        if (e.box && !want.length) P(k.slipEmpty(e.box.toUpperCase()));
         rows.forEach(Li);
         link(s.yearNav ? s.yearNav.slips : s.tabs.year, 'year:y-slips');
         break;
@@ -763,11 +788,12 @@
         }
         const y = new Date().getFullYear(),
           list = ag.holidays[lang] || ag.holidays.en;
-        const dates = PD.holidayDates(y, ag.holidayIds).concat(PD.holidayDates(y + 1, ag.holidayIds));
+        const days = PD.holidayList(y, ag.holidayIds).concat(PD.holidayList(y + 1, ag.holidayIds));
+        const dates = days.map((h) => h.date);
         const n = list.length,
           today = todayIso(); // the local date, not UTC (evenings in Québec are already tomorrow in UTC)
-        // the weekend rule can move a holiday onto another one that year: that date is for the plant to set, as in the Guide
-        const clash = (i) => dates.indexOf(dates[i], Math.floor(i / n) * n) !== i;
+        // the weekend rule can move a holiday onto another one, even across New Year: that date is for the plant to set, as in the Guide
+        const clash = (i) => days[i].clash;
         if (d.hol >= 0) {
           const i = dates[d.hol] >= today ? d.hol : n + d.hol;
           P(clash(i) ? k.holidayTbc(list[d.hol], y + Math.floor(i / n)) : k.holidayIs(list[d.hol], L.dateW(dates[i])));

@@ -48,7 +48,7 @@ function serve(dir) {
 
 const SUITES = [
   ['rules', 'tests/rules.mjs', { PAYSLIPS: real.join(' ') }],
-  ['unlock', 'tests/unlock.mjs'],
+  ['unlock', 'tests/unlock.mjs', real.length ? { PAYSLIP: real[0] } : {}],
   ['assistant', 'tests/assistant.mjs'],
   ['ui', 'tests/ui.mjs'],
   ['privacy', 'tests/privacy.mjs', { BASE }],

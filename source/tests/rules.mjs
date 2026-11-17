@@ -3,7 +3,7 @@
 //        PAYSLIPS="a.pdf b.pdf" node tests/rules.mjs   (also: every real payslip passes every check)
 import * as pdfjs from '../node_modules/pdfjs-dist/legacy/build/pdf.mjs';
 import fs from 'fs';
-import { fixtures, makePayslip, PD } from './fixtures.mjs';
+import { fixtures, makePayslip, PD, VARIANTS } from './fixtures.mjs';
 const F = await fixtures();
 PD.PACKS = JSON.parse(fs.readFileSync(new URL('../packs.enc.json', import.meta.url), 'utf8')).concat([F.pack]);
 let fails = 0;
@@ -92,6 +92,48 @@ ok(
     PD.holidayDates(2027, ['patriots'])[0] === '2027-05-24' &&
     PD.holidayDates(2020, ['patriots'])[0] === '2020-05-18',
 );
+
+// a holiday the weekend rule moves onto another one has a date to confirm, also across New Year; the other keeps its date
+{
+  const ALL = [
+    'newYear',
+    'dayAfterNewYear',
+    'goodFriday',
+    'easterMonday',
+    'patriots',
+    'stJean',
+    'canada',
+    'labour',
+    'thanksgiving',
+    'christmasEve',
+    'christmas',
+    'boxing',
+    'newYearsEve',
+  ];
+  const day = (y, id) => PD.holidayList(y, ALL).find((h) => h.id === id);
+  ok(
+    'New Year’s Day 2028 (a Saturday) moves to December 31, 2027, already New Year’s Eve: to confirm; New Year’s Eve keeps its date',
+    day(2028, 'newYear').date === '2027-12-31' && day(2028, 'newYear').clash && !day(2027, 'newYearsEve').clash,
+  );
+  ok(
+    'New Year’s Eve 2028 (a Sunday) moves onto New Year’s Day 2029: to confirm',
+    day(2028, 'newYearsEve').date === '2029-01-01' && day(2028, 'newYearsEve').clash && !day(2029, 'newYear').clash,
+  );
+  ok(
+    'Boxing Day 2026 (a Saturday) lands on Christmas: Boxing Day is the one to confirm',
+    day(2026, 'boxing').clash && !day(2026, 'christmas').clash,
+  );
+  ok(
+    'Christmas Eve 2023 (a Sunday) lands on Christmas: Christmas Eve is the one to confirm',
+    day(2023, 'christmasEve').clash && !day(2023, 'christmas').clash,
+  );
+  ok('a year with no clash flags nothing (2025)', !PD.holidayList(2025, ALL).some((h) => h.clash));
+  ok(
+    'the days off a year holds: December 31, 2027 counts once, in 2027; 2028 starts with January 3',
+    PD.holidaysIn(2027, ALL).filter((d) => d === '2027-12-31').length === 1 && PD.holidaysIn(2028, ALL)[0] === '2028-01-03',
+    PD.holidaysIn(2028, ALL).slice(0, 2).join(),
+  );
+}
 
 // 5. payslips, made-up ones first, then real ones if given (kept outside the repo): every check passes with the
 //    rules of their own date, and a figure changed on purpose (with the totals that follow from it) is caught by its own check
@@ -233,6 +275,65 @@ const txt = (x) => (typeof x === 'function' ? x(L) : x && x.en ? x.en : String(x
       !warnsOf(X.A).length &&
       X.A.checks.find((c) => c.id === 'fedTax')?.status === 'ok',
   );
+  // tax slips: RL-1 boxes B.A and B.B since 2024 (B before), and pensionable pay up to the second ceiling once QPP2 is paid
+  const box = (A, slip, b) => (A.slips[slip].find((x) => x[0] === b) || [])[2];
+  const Q2 = makePayslip({ ...VARIANTS.maxed(), prev: { qpp2: 275.44 } });
+  await PD.unlockFor(Q2.header);
+  const Q2A = PD.analyze(Q2);
+  const q2ytd = Q2A.taxes.find((t) => t.kind === 'qpp2')?.ytd;
+  ok(
+    'second QPP paid: T4 17A and RL-1 B.B hold it, B.A holds QPP, boxes 26 and G go past the first ceiling, every check passes',
+    q2ytd > 0 &&
+      box(Q2A, 't4', '17A') === q2ytd &&
+      box(Q2A, 'rl1', 'B.B') === q2ytd &&
+      box(Q2A, 'rl1', 'B.A') === box(Q2A, 't4', '17') &&
+      box(Q2A, 't4', '26') > PD.GOV[2026].qpp.mga &&
+      box(Q2A, 'rl1', 'G') === box(Q2A, 't4', '26') &&
+      !Q2A.slips.rl1.some((x) => x[0] === 'B') &&
+      !warnsOf(Q2A).length,
+    JSON.stringify(Q2A.slips.rl1.slice(0, 3)),
+  );
+  ok(
+    'no second QPP: boxes 26 and G stop at the first ceiling',
+    box(X.A, 't4', '26') === PD.GOV[2026].qpp.mga && box(X.A, 'rl1', 'G') === PD.GOV[2026].qpp.mga,
+  );
+  const old = structuredClone(M.p);
+  Object.assign(old.header, { payDate: '2023-11-09', periodStart: '2023-10-29', periodEnd: '2023-11-04' });
+  const OA = PD.analyze(old);
+  ok('a 2023 payslip: QPP in RL-1 box B, no B.A or B.B', !!box(OA, 'rl1', 'B') && !box(OA, 'rl1', 'B.A') && !box(OA, 'rl1', 'B.B'));
+  // a check's title says how it came out: "matches" only when it does
+  const title = (A, id) => txt(A.checks.find((c) => c.id === id)?.title);
+  const bonus = makePayslip({
+    ...VARIANTS.payslip(),
+    rows: (E) => [...VARIANTS.payslip().rows(E), ['Boni', 0, 0, 0, null, undefined, 1500]],
+  });
+  await PD.unlockFor(bonus.header);
+  const fedRow = bonus.sections[1].rows.find((r) => /fédéral/.test(r.desc));
+  fedRow.values.amount = r2(fedRow.values.amount - 26.72); // what a bonus taxed on its own looks like
+  const BA = PD.analyze(bonus);
+  const fc = BA.checks.find((c) => c.id === 'fedTax');
+  ok(
+    'a bonus taxed on its own: the federal check says by how much it differs and why, as a note',
+    fc.status === 'info' &&
+      /differs from the CRA formula for 2026 by \$26\.72/.test(title(BA, 'fedTax')) &&
+      /one-off amount \(Boni\)/.test(txt(fc.detail)),
+    `${fc.status}: ${title(BA, 'fedTax')}`,
+  );
+  ok(
+    'a matching check keeps its "matches" title',
+    /^Federal income tax matches/.test(title(M.A, 'fedTax')) && /^QPP contribution matches/.test(title(M.A, 'qpp')),
+  );
+  // a payslip that prints its header again on its next page is still one payslip; two payslips in one file are two
+  const pagesOf = async (f) => (await PD.extractPages(pdfjs, new Uint8Array(fs.readFileSync(f)))).pages;
+  const longPages = await pagesOf(F.long),
+    longGroups = PD.splitPayslips(longPages);
+  const LA = PD.analyze(PD.parsePayslip(longGroups[0].map((n) => longPages[n])));
+  ok(
+    'a header printed again on the next page: one payslip, same pay, every check passes',
+    longGroups.length === 1 && longGroups[0].length === longPages.length && LA.summary.net === M.A.summary.net && !warnsOf(LA).length,
+    `${longPages.length} pages, groups ${JSON.stringify(longGroups)}`,
+  );
+  ok('two payslips saved in one file are still two', PD.splitPayslips(await pagesOf(F.merged)).length === 2);
   const R = await open(F.backpay);
   const rc = R.A.checks.find((c) => c.id === 'rate-0.75');
   ok(
@@ -256,7 +357,10 @@ const txt = (x) => (typeof x === 'function' ? x(L) : x && x.en ? x.en : String(x
       !warnsOf(Y3.A).length,
   );
   const Bd = await open(F.bad);
-  ok('QPP $1 higher than the formula is flagged', warnsOf(Bd.A).includes('qpp'));
+  ok(
+    'QPP $1 higher than the formula is flagged, and its title says it doesn’t match',
+    warnsOf(Bd.A).includes('qpp') && /^QPP contribution doesn’t match/.test(title(Bd.A, 'qpp')),
+  );
   const W2 = await open(F.week2),
     W3 = await open(F.week3);
   ok(

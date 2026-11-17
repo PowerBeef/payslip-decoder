@@ -5,7 +5,8 @@
 export const TEST_COMPANY = 'Usinage Fictif ltée';
 export const TEST_ADDRESS = '200, boulevard du Fictif, Lac-Imaginaire, QC J0J 1J1';
 // the spellings that open it (see PD.agreementMaterial): as printed, and the city's other name
-export const TEST_MATERIALS = ['usinage|lac-imaginaire', 'usinage|ville-imaginaire'];
+// the town as printed, and the merged city's official name: a fallback that applies only to pay on these scales
+export const TEST_MATERIALS = ['usinage|lac-imaginaire', { m: 'usinage|ville-imaginaire', fit: true }];
 
 const r2 = (v) => Math.round((v + Number.EPSILON) * 100) / 100;
 // 2025 scale; the 2026 scale is 2.75% higher (27.10 becomes 27.85 and 28.68 becomes 29.47, as on the example)
@@ -23,6 +24,7 @@ export const TEST_PACK = {
   signed: '2025-05-01',
   expires: '2028-04-30',
   scales: [scale('2025-05-04', 2.5, 1), scale('2026-05-03', 2.75, 1.0275)],
+  vacationUnit: 'dollars', // the made-up agreement pays vacation as a percentage of pay: the balance is money
   jobs: {
     1: ['Journalier'],
     2: ['Emballeur', 'Commis'],
@@ -144,7 +146,7 @@ export const TEST_PACK = {
       charity: '',
       charityTitle: '',
       sick: '{h} hours used; {days} days ({hours} hours) a year.',
-      sickLeft: '{days} days ({hours} hours) left.',
+      sickLeft: '{days} days ({hours} hours) per year of the made-up agreement.',
       shiftRef: '',
       insHigher: '{rate} is above class {cls} level {lv}.',
       holidaysRef: '',
@@ -166,7 +168,7 @@ export const TEST_PACK = {
       charity: '',
       charityTitle: '',
       sick: '{h} heures utilisées; {days} jours ({hours} heures) par année.',
-      sickLeft: 'Il reste {days} jours ({hours} heures).',
+      sickLeft: '{days} jours ({hours} heures) par année selon la convention fictive.',
       shiftRef: '',
       insHigher: '{rate} dépasse la classe {cls}, niveau {lv}.',
       holidaysRef: '',

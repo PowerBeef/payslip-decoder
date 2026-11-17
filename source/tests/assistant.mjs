@@ -174,6 +174,28 @@ ok(`one question takes ${ms.toFixed(2)} ms`, ms < 5);
     }
   }
 }
+// double time is overtime at twice the rate: a question about it gets only those lines, or hears there are none
+{
+  const { makePayslip, VARIANTS } = await import('./fixtures.mjs');
+  const base = VARIANTS.payslip();
+  const dp = makePayslip({ ...base, rows: (E) => [...base.rows(E), ['Temps double (01, 210)', 2, 55.7, 2, null]] });
+  await PD.unlockFor(dp.header);
+  const DA = PD.analyze(dp);
+  const askOn = (q, recs) => PD.Ask.text(PD.Ask.answer(q, { recs, cur: recs.length - 1, makeL, lang: 'en' })).replace(/\n/g, ' ');
+  const t = askOn('how much double time did I get?', [{ parsed: dp, A: DA }]);
+  ok('double time: only the lines at twice the rate', /^Double time: \$111\.40 this pay \(2 h at \$55\.70\)/.test(t), t.slice(0, 90));
+  const plain = makePayslip(base);
+  await PD.unlockFor(plain.header);
+  const t2 = askOn('combien de temps double cette semaine?', [{ parsed: plain, A: PD.analyze(plain) }]);
+  ok(
+    'no double time on the pay: it says so, then gives the overtime',
+    /^Aucun temps double sur cette paie\. Temps supplémentaire/.test(t2),
+    t2.slice(0, 90),
+  );
+  const t3 = askOn('how much overtime did I get?', [{ parsed: dp, A: DA }]);
+  ok('an overtime question still gets all the overtime', /^Overtime: \$278\.52 this pay \(6 h\)/.test(t3), t3.slice(0, 90));
+}
+
 // "this year" in the text means the payslip's year once that year is over
 {
   const y = new Date().getFullYear() - 1;

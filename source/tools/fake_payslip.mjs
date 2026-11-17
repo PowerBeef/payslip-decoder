@@ -94,13 +94,18 @@ export function makePayslip(o = {}) {
   const E = o.rows ? o.rows(EARN.map((x) => x.slice())) : EARN;
   const back = o.back || 0; // pays before the reference week: fixed year-to-date amounts are that much lower
 
-  const earnRows = E.map(([desc, h, rate, yh, y, dates]) => {
+  // a row: [desc, hours, rate, ytd hours, ytd amount, dates, amount]; an amount with no hours (a bonus, a salary) is the 7th
+  const earnRows = E.map(([desc, h, rate, yh, y, dates, amt]) => {
     const v = { rate, ytdHours: yh, ytd: y == null ? r2(yh * rate) : y };
     if (h) {
       v.hours = h;
       v.amount = r2(h * rate);
     }
-    return { desc, dates: dates || (h ? D : undefined), values: v };
+    if (amt != null) {
+      v.amount = amt;
+      if (y == null && !yh) v.ytd = amt;
+    }
+    return { desc, dates: dates || (h || amt != null ? D : undefined), values: v };
   });
   const gross = sum(earnRows.map((r) => r.values.amount));
   const grossYtd = sum(earnRows.map((r) => r.values.ytd));
@@ -123,8 +128,8 @@ export function makePayslip(o = {}) {
 
   function build(t) {
     const enhDiv = gov.qpp.rate / gov.qpp.enh; // the enhanced part of QPP (deductible): 1 point of the rate
-    const enh = r2(t.qpp / enhDiv);
-    const enhY = r2(t.qppYtd / enhDiv);
+    const enh = r2(t.qpp / enhDiv + (t.qpp2 || 0)); // QPP2 is deductible in full
+    const enhY = r2(t.qppYtd / enhDiv + (t.qpp2Ytd || 0));
     const fedTaxable = r2(gross - pension - union - enh),
       fedTaxableY = r2(grossYtd - pensionYtd - unionYtd - enhY);
     const provSubj = r2(gross + provTB),
@@ -136,6 +141,7 @@ export function makePayslip(o = {}) {
       ['Impôt sur le revenu fédéral', t.fed, t.fedYtd],
       ['RQAP', t.qpip, t.qpipYtd],
       ['RRQ', t.qpp, t.qppYtd],
+      ...(t.qpp2 != null ? [['RRQ2', t.qpp2, t.qpp2Ytd]] : []),
       ['Impôt sur le revenu provincial', t.qc, t.qcYtd],
     ];
     const taxCur = sum(taxes.map((x) => x[1])),
@@ -264,6 +270,21 @@ export function makePayslip(o = {}) {
   };
   // a high earner who has already reached the QPP and EI maximums: nothing more is taken this pay
   if (o.maxed) Object.assign(t, { qppYtd: gov.qpp.max, ei: 0, eiYtd: gov.ei.max });
+  // year-to-date before this pay, for a pay that reaches a yearly maximum (o.prev: { qpp, ei, qpip, qpp2 })
+  const pv = o.prev || {};
+  const capTo = (amount, max, before) => r2(Math.max(0, Math.min(amount, max - before)));
+  if (pv.ei != null) {
+    t.ei = capTo(gross * gov.ei.rate, gov.ei.max, pv.ei);
+    t.eiYtd = r2(pv.ei + t.ei);
+  }
+  if (pv.qpip != null) {
+    t.qpip = capTo(gross * gov.qpip.rate, gov.qpip.max, pv.qpip);
+    t.qpipYtd = r2(pv.qpip + t.qpip);
+  }
+  if (pv.qpp2 != null) {
+    t.qpp2 = 0;
+    t.qpp2Ytd = pv.qpp2;
+  }
   // QPP worked out over a chosen number of pays (53 in a year with 53 pay dates); otherwise the app's first choice
   const qppFixed = o.qppPays ? r2(Math.max(0, gross + provTB - gov.qpp.exempt / o.qppPays) * gov.qpp.rate) : null;
   for (let i = 0; i < 6; i++) {
@@ -271,6 +292,11 @@ export function makePayslip(o = {}) {
     const A = PD.analyze(build(t));
     const g = A.govChecks;
     if (qppFixed == null) t.qpp = g.qpp.expected;
+    if (pv.qpp != null) t.qppYtd = r2(pv.qpp + t.qpp);
+    if (pv.qpp2 != null && g.qpp2) {
+      t.qpp2 = g.qpp2.expected;
+      t.qpp2Ytd = r2(pv.qpp2 + t.qpp2);
+    }
     t.fed = g.fedTax ? g.fedTax.expected : t.fed;
     t.qc = g.qcTax ? g.qcTax.expected : t.qc;
     t.fedYtd = r2(t.fed * (grossYtd / gross) * 0.985);

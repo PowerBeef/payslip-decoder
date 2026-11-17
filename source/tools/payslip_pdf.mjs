@@ -89,11 +89,11 @@ export async function payslipPdf(parsed, opts = {}) {
   doc.setProducer('payslip-decoder tests');
   doc.setCreator('payslip-decoder tests');
   const font = await doc.embedFont(StandardFonts.Helvetica);
-  for (const p of [].concat(parsed)) drawPayslip(doc, font, p, LBL[opts.lang || p.lang || 'fr']);
+  for (const p of [].concat(parsed)) drawPayslip(doc, font, p, LBL[opts.lang || p.lang || 'fr'], opts);
   return doc.save({ useObjectStreams: false });
 }
 
-function drawPayslip(doc, font, p, L) {
+function drawPayslip(doc, font, p, L, opts = {}) {
   let page = doc.addPage([W, H]);
   const width = (s) => font.widthOfTextAtSize(s, FS);
   const text = (s, x, y) => {
@@ -121,30 +121,34 @@ function drawPayslip(doc, font, p, L) {
   };
   const h = p.header;
 
-  /* header: employer and employee lines, then the label row and the values row */
-  text(h.company, 202.6, 122);
-  text(h.companyAddress, 202.6 + width(h.company) + 8, 122);
-  text(h.name, 180.3, 131);
-  const ea = 180.3 + width(h.name) + 8;
-  text(h.employeeAddress, ea, 131);
-  text(`${L.position} ${h.position}`, Math.max(373.1, ea + width(h.employeeAddress) + 8), 131);
-  text(L.name, 37, 140);
-  text(L.company, 144.7, 140);
-  right(L.id[0], 325.8, 140);
-  right(L.id[1], 325.8, 148);
-  right(L.start[0], 391.0, 140);
-  right(L.start[1], 391.0, 148);
-  right(L.end[0], 456.1, 140);
-  right(L.end[1], 456.1, 148);
-  right(L.date, 521.3, 140);
-  right(L.check[0], 574.5, 140);
-  right(L.check[1], 574.5, 148);
-  text(h.name, 37, 157.5);
-  text(h.company, 144.7, 157.5);
-  right(h.employeeId, 325.8, 157.5);
-  right(mdy(h.periodStart), 391.0, 157.5);
-  right(mdy(h.periodEnd), 456.1, 157.5);
-  right(mdy(h.payDate), 521.3, 157.5);
+  /* header: employer and employee lines, then the label row and the values row (repeated on later pages with
+     opts.repeatHeader, as some payslips do) */
+  const header = () => {
+    text(h.company, 202.6, 122);
+    text(h.companyAddress, 202.6 + width(h.company) + 8, 122);
+    text(h.name, 180.3, 131);
+    const ea = 180.3 + width(h.name) + 8;
+    text(h.employeeAddress, ea, 131);
+    text(`${L.position} ${h.position}`, Math.max(373.1, ea + width(h.employeeAddress) + 8), 131);
+    text(L.name, 37, 140);
+    text(L.company, 144.7, 140);
+    right(L.id[0], 325.8, 140);
+    right(L.id[1], 325.8, 148);
+    right(L.start[0], 391.0, 140);
+    right(L.start[1], 391.0, 148);
+    right(L.end[0], 456.1, 140);
+    right(L.end[1], 456.1, 148);
+    right(L.date, 521.3, 140);
+    right(L.check[0], 574.5, 140);
+    right(L.check[1], 574.5, 148);
+    text(h.name, 37, 157.5);
+    text(h.company, 144.7, 157.5);
+    right(h.employeeId, 325.8, 157.5);
+    right(mdy(h.periodStart), 391.0, 157.5);
+    right(mdy(h.periodEnd), 456.1, 157.5);
+    right(mdy(h.payDate), 521.3, 157.5);
+  };
+  header();
 
   /* summary */
   const SX = [246.4, 328.6, 410.8, 493.0, 574.5];
@@ -222,6 +226,12 @@ function drawPayslip(doc, font, p, L) {
   }
   const right1 = narrow(rest[0], 372.9, 574.5, y, 528.7, 574.5);
   y = Math.max(left, right1) + 4;
+  // a payslip long enough to continue on a second page
+  if (opts.breakAfterEarnings) {
+    page = doc.addPage([W, H]);
+    if (opts.repeatHeader) header();
+    y = 175;
+  }
 
   /* vacation balances */
   if (p.vacation.length) {

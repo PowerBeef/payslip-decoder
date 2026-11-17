@@ -47,6 +47,7 @@
   async function tryDecrypt(pack, material) {
     const subtle = G.crypto && G.crypto.subtle;
     if (!subtle) return null;
+    let fit = false;
     try {
       const k = await deriveKey(subtle, material, pack);
       let content = k;
@@ -57,6 +58,7 @@
           try {
             const raw = await subtle.decrypt({ name: 'AES-GCM', iv: fromB64(s.iv) }, k, fromB64(s.k));
             content = await subtle.importKey('raw', raw, 'AES-GCM', false, ['decrypt']);
+            fit = !!s.fit; // a fallback spelling: the pack applies only to pay that fits its scales
             break;
           } catch (e) {
             /* not this spelling's wrap */
@@ -65,35 +67,51 @@
         if (!content) return null;
       }
       const pt = await subtle.decrypt({ name: 'AES-GCM', iv: fromB64(pack.iv) }, content, fromB64(pack.ct));
-      return JSON.parse(new TextDecoder().decode(pt));
+      return { ag: JSON.parse(new TextDecoder().decode(pt)), fit };
     } catch (e) {
       return null;
     }
   }
 
-  /* Unlock the pack that matches this payslip, if any. Safe to call for every payslip. */
+  /* Unlock the pack that matches this payslip's header, if any. Safe to call for every payslip. Each opened agreement
+     remembers the spellings that opened it (ag._mats: spelling → whether it is a fallback that needs the fit test). */
   PD.unlockFor = async (h) => {
     const mats = PD.agreementMaterial(h);
     if (!mats.length) return null;
-    const known = PD.AGREEMENTS.find((a) => mats.includes(a._material));
+    const known = PD.AGREEMENTS.find((a) => mats.some((m) => m in a._mats));
     if (known) return known;
     for (const pack of PD.PACKS) {
-      if (pack._open) continue;
       for (const m of mats) {
-        const ag = await tryDecrypt(pack, m);
-        if (ag) {
-          ag._material = m;
-          pack._open = true;
-          PD.AGREEMENTS.push(ag);
-          return ag;
-        }
+        const r = await tryDecrypt(pack, m);
+        if (!r) continue;
+        let ag = PD.AGREEMENTS.find((a) => a.id === r.ag.id);
+        if (!ag) PD.AGREEMENTS.push((ag = Object.assign(r.ag, { _mats: {} })));
+        ag._mats[m] = r.fit;
+        return ag;
       }
     }
     return null;
   };
-  PD.findAgreement = (h) => {
+  /* the agreement for a payslip: opened through its header's spelling, and when that spelling is only a fallback, the
+     payslip's main hourly rate (the line with the most hours) must be on the agreement's scale for that date or the one
+     before it. pay: { rows: [{ rate, hours }], date } */
+  PD.findAgreement = (h, pay) => {
     const mats = PD.agreementMaterial(h);
-    return PD.AGREEMENTS.find((a) => mats.includes(a._material)) || null;
+    const ag = PD.AGREEMENTS.find((a) => mats.some((m) => m in a._mats));
+    if (!ag) return null;
+    if (mats.some((m) => ag._mats[m] === false)) return ag;
+    return pay && PD.payFits(ag, pay) ? ag : null;
+  };
+  PD.payFits = (ag, { rows, date }) => {
+    // a shift premium is paid on every hour but is a few dollars an hour, never a wage
+    const main = rows.filter((r) => r.rate >= 10 && r.hours > 0).sort((a, b) => b.hours - a.hours)[0];
+    const now = date && PD.scaleFor(ag, date);
+    if (!main || !now) return false;
+    const i = ag.scales.indexOf(now);
+    const near = [now, ag.scales[i - 1]].filter(Boolean);
+    return near.some((sc) =>
+      Object.values(sc.rates || {}).some((c) => Object.values(c).some((v) => Math.round(v * 100) === Math.round(main.rate * 100))),
+    );
   };
 
   /* agreement wording with {placeholders} */
@@ -103,7 +121,7 @@
   };
 
   /* Statutory holidays for a year, as ISO dates. Saturday → the Friday before, Sunday → the Monday after. */
-  PD.holidayDates = (year, ids) => {
+  PD.holidayDates = (year, ids, nominal = false) => {
     if (!ids || !ids.length) return [];
     const D = (m, d) => new Date(Date.UTC(year, m - 1, d));
     const add = (t, n) => new Date(t.getTime() + n * 864e5);
@@ -148,10 +166,31 @@
       boxing: () => D(12, 26),
       newYearsEve: () => D(12, 31),
     };
-    return ids
-      .map((id) => (H[id] ? H[id]() : null))
-      .map((t) => (t ? (t.getUTCDay() === 6 ? add(t, -1) : t.getUTCDay() === 0 ? add(t, 1) : t).toISOString().slice(0, 10) : null));
+    const days = ids.map((id) => (H[id] ? H[id]() : null));
+    if (nominal) return days.map((t) => (t ? t.toISOString().slice(0, 10) : null));
+    return days.map((t) =>
+      t ? (t.getUTCDay() === 6 ? add(t, -1) : t.getUTCDay() === 0 ? add(t, 1) : t).toISOString().slice(0, 10) : null,
+    );
   };
+
+  /* Each holiday of a year: the day it is observed, and whether that day has to be confirmed. The weekend rule can move
+     a holiday onto another one, even across New Year (New Year's Day on a Saturday moves to December 31, which may
+     already be a holiday): the holiday that moved is then for the employer to set. */
+  PD.holidayList = (year, ids) => {
+    if (!ids || !ids.length) return [];
+    const all = [];
+    for (const y of [year - 1, year, year + 1]) {
+      const nom = PD.holidayDates(y, ids, true),
+        obs = PD.holidayDates(y, ids);
+      ids.forEach((id, i) => all.push({ id, i, year: y, nominal: nom[i], date: obs[i] }));
+    }
+    return all
+      .filter((h) => h.year === year)
+      .map((h) => ({ ...h, clash: !!h.date && h.date !== h.nominal && all.some((o) => o !== h && o.date === h.date) }));
+  };
+  /* the holidays a calendar year holds, its neighbours' moved ones included: each day once, first to last */
+  PD.holidaysIn = (year, ids) =>
+    [...new Set([year - 1, year, year + 1].flatMap((y) => PD.holidayDates(y, ids)).filter((d) => d && +d.slice(0, 4) === year))].sort();
 
   PD.scaleFor = (ag, isoDate) => {
     const s = ag.scales.filter((x) => x.from <= isoDate);

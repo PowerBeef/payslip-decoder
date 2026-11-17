@@ -283,6 +283,8 @@
         chipAmount: (n) => `How much ${n}?`,
         noExpl: 'no explanation available.',
         notOnSlip: (n) => `There is no ${n} line on this payslip.`,
+        noDouble: 'No double time on this pay.',
+        doubleName: 'Double time',
         see: (n) => `See ${n}`,
         earnLine: (n, a, h, r, y) => `${n}: ${a} this pay${h ? ` (${h}${r ? ` at ${r}` : ''})` : ''}; ${y} since January.`,
         taxLine: (n, a, p, y, mx, hit) =>
@@ -308,8 +310,8 @@
           `Workday shows ${r} h because it counts hours used without loading the yearly allowance; what is left can't go below zero.`,
         sickWorkday: (h) => `Workday shows ${h} of sick time.`,
         bankLeft: (h) => `You have ${h} in your overtime bank.`,
-        vacLeft: (m, h) =>
-          `Your vacation balance is ${m}${h ? `, about ${h} h at your usual rate` : ''}. Workday doesn't give the unit; dollars are most likely.`,
+        vacLeft: (m, h, sure) =>
+          `Your vacation balance is ${m}${h ? `, about ${h} h at your usual rate` : ''}.${sure ? '' : " Workday doesn't give the unit; dollars are most likely."}`,
         vacLeftRaw: (v) => `Your vacation balance is ${v} (Workday doesn't say whether it's hours or dollars).`,
         vacAccruing: (v) => `You are building up ${v} toward next year's vacation.`,
         ytdLine: (n, m) => `${n} since January: ${m}.`,
@@ -321,6 +323,7 @@
         maxLater: "You won't reach it this year at this pace.",
         noSlips: 'No tax-slip amounts could be worked out from this payslip.',
         slips: (d) => `Your T4 and RL-1 so far (to ${d}):`,
+        slipEmpty: (b) => `Box ${b} is empty on your slips so far. The main boxes:`,
         noEmployer: 'This payslip shows no employer-paid amounts.',
         employer: (l, t) => `Paid by your employer on top of your pay: ${l} (${t}). None of it is in your bank deposit.`,
         checksWarn: (n, t) => `${n} of ${t} checks flagged something:`,
@@ -947,6 +950,8 @@
         chipAmount: (n) => `Combien de ${n.toLowerCase()}?`,
         noExpl: 'pas d’explication disponible.',
         notOnSlip: (n) => `Il n’y a pas de ligne « ${n} » sur ce talon.`,
+        noDouble: 'Aucun temps double sur cette paie.',
+        doubleName: 'Temps double',
         see: (n) => `Voir ${n.replace(/^(\p{Lu})(?=\p{Ll})/u, (c) => c.toLowerCase())}`,
         earnLine: (n, a, h, r, y) => `${n} : ${a} cette paie${h ? ` (${h}${r ? ` à ${r}` : ''})` : ''}; ${y} depuis janvier.`,
         taxLine: (n, a, p, y, mx, hit) =>
@@ -972,8 +977,8 @@
           `Workday affiche ${r} h parce qu’il compte les heures prises sans inscrire l’octroi annuel; ce qui reste ne peut pas descendre sous zéro.`,
         sickWorkday: (h) => `Workday indique ${h} de maladie.`,
         bankLeft: (h) => `Vous avez ${h} dans votre banque de temps supplémentaire.`,
-        vacLeft: (m, h) =>
-          `Votre solde de vacances est de ${m}${h ? `, environ ${h} h à votre taux habituel` : ''}. Workday n’indique pas l’unité; il s’agit probablement de dollars.`,
+        vacLeft: (m, h, sure) =>
+          `Votre solde de vacances est de ${m}${h ? `, environ ${h} h à votre taux habituel` : ''}.${sure ? '' : ' Workday n’indique pas l’unité; il s’agit probablement de dollars.'}`,
         vacLeftRaw: (v) => `Votre solde de vacances est de ${v} (Workday ne précise pas s’il s’agit d’heures ou de dollars).`,
         vacAccruing: (v) => `Vous accumulez ${v} pour les vacances de l’an prochain.`,
         ytdLine: (n, m) => `${n} depuis janvier : ${m}.`,
@@ -985,6 +990,7 @@
         maxLater: 'À ce rythme, vous ne l’atteindrez pas cette année.',
         noSlips: 'Impossible d’établir les montants des feuillets à partir de ce talon.',
         slips: (d) => `Votre T4 et votre relevé 1 à ce jour (au ${d}) :`,
+        slipEmpty: (b) => `La case ${b} est vide sur vos feuillets à ce jour. Les cases principales :`,
         noEmployer: 'Ce talon ne montre aucun montant payé par l’employeur.',
         employer: (l, t) => `Payé par votre employeur en plus de votre paie : ${l} (${t}). Rien de cela n’est dans votre dépôt.`,
         checksWarn: (n, t) => `${n} vérification${n > 1 ? 's' : ''} sur ${t} ${n > 1 ? 'ont' : 'a'} relevé quelque chose :`,
@@ -1445,8 +1451,10 @@
     qpp2: X(
       'Second QPP contribution (QPP2)',
       'Deuxième cotisation au RRQ (RRQ2)',
-      '4% on yearly pay between the first and second ceilings ($74,600 to $85,000 in 2026). Fully deductible.',
-      '4 % sur la paie annuelle entre le premier et le deuxième plafond (74 600 $ à 85 000 $ en 2026). Entièrement déductible.',
+      (g, y, m) =>
+        `4% on yearly pay between the first and second ceilings${g.qpp && g.qpp.mga2 ? ` (${m(g.qpp.mga)} to ${m(g.qpp.mga2)} in ${y})` : ''}. Fully deductible.`,
+      (g, y, m) =>
+        `4 % sur la paie annuelle entre le premier et le deuxième plafond${g.qpp && g.qpp.mga2 ? ` (${m(g.qpp.mga)} à ${m(g.qpp.mga2)} en ${y})` : ''}. Entièrement déductible.`,
     ),
     cpp: X(
       'Canada Pension Plan (CPP)',

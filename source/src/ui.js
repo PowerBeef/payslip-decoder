@@ -173,7 +173,11 @@
         if (a) return a[lang] || a.en;
         const K = PD.KINDS[k];
         if (!K) return '';
-        return lang === 'fr' ? K.dfr : K.den;
+        const t = lang === 'fr' ? K.dfr : K.den;
+        // some explanations quote a year's figures: those of the payslip's year
+        return typeof t === 'function'
+          ? t(PD.GOV[year || new Date().getFullYear()] || {}, year || new Date().getFullYear(), cur0.format)
+          : t;
       },
       h: (v) => (v == null ? '—' : new Intl.NumberFormat(loc, { maximumFractionDigits: 2 }).format(v) + ' h'),
     };
@@ -501,7 +505,7 @@
     const notes = [];
     if (T.sick && T.sick.of && A.agreement)
       notes.push(PD.agText(A.agreement, L.lang, 'sickLeft', { days: L.num(T.sick.of / T.sick.hoursPerDay), hours: L.num(T.sick.of) }));
-    if (T.vacation && T.vacation.likelyDollars) notes.push(t.vacUnit);
+    if (T.vacation && T.vacation.likelyDollars && !T.vacation.dollars) notes.push(t.vacUnit);
     return `<section class="card toff" id="p-toff" aria-labelledby="toff-h">
       <div class="card-h"><h2 id="toff-h">${esc(t.title)}</h2></div>
       ${stale(A) ? `<p class="asof">${I.tYear}<span>${esc(t.asOf(L.date(A.meta.payDate)))}</span></p>` : ''}
@@ -1039,7 +1043,7 @@
         t0 = Date.UTC(y, 0, 1),
         t1 = Date.UTC(y + 1, 0, 1);
       const pos = (iso) => (((Date.parse(iso + 'T00:00:00Z') - t0) / (t1 - t0)) * 100).toFixed(2);
-      const dates = PD.holidayDates(y, A.agreement.holidayIds).filter((d, i, arr) => d <= A.meta.periodEnd && arr.indexOf(d) === i);
+      const dates = PD.holidaysIn(y, A.agreement.holidayIds).filter((d) => d <= A.meta.periodEnd);
       const months = Array.from(
         { length: 12 },
         (_, m) => `<span style="left:${pos(`${y}-${String(m + 1).padStart(2, '0')}-01`)}%">${esc(L.month(m))}</span>`,
@@ -1126,13 +1130,14 @@
     const facts = `<h3 class="sub">${esc(s.facts)}</h3><div class="facts">${F.map(([v, k, a]) => `<div><b>${esc(v)}</b><span>${esc(k)}</span><small>${esc(a)}</small></div>`).join('')}</div>`;
     const vac = `<h3 class="sub">${esc(s.vacTable)} (${esc(PD.agText(ag, lang, 'vacRef'))})</h3><div class="vt"><div class="vt-r hd"><span>${esc(s.service)}</span><span>${esc(s.length)}</span><span class="num">${esc(s.pctPay)}</span></div>${ag.vacation.map((v) => `<div class="vt-r"><span>${esc(v.svc[lang])}</span><span>${esc(v.len[lang])}</span><span class="num">${esc(L.pct(v.pct, 1))}</span></div>`).join('')}</div>`;
     const y = A.meta.year || 2026,
-      hd = PD.holidayDates(y, ag.holidayIds);
+      hd = PD.holidayList(y, ag.holidayIds);
     const hol = `<h3 class="sub">${esc(s.holidaysTitle(ag.holidays[lang].length, y))} (${esc(PD.agText(ag, lang, 'holidaysRef'))})</h3><ol class="holi">${ag.holidays[
       lang
     ]
       .map((h, i) => {
-        const clash = hd.indexOf(hd[i]) !== i;
-        return `<li class="${hd[i] && hd[i] <= (A.meta.periodEnd || '') ? 'past' : ''}"><span class="hd">${clash ? '—' : esc(L.dateS(hd[i]))}</span><span>${esc(h)}${clash ? `<small>${esc(s.holClash)}</small>` : ''}</span></li>`;
+        const day = hd[i] || {},
+          clash = day.clash;
+        return `<li class="${day.date && day.date <= (A.meta.periodEnd || '') ? 'past' : ''}"><span class="hd">${clash ? '—' : esc(L.dateS(day.date))}</span><span>${esc(h)}${clash ? `<small>${esc(s.holClash)}</small>` : ''}</span></li>`;
       })
       .join('')}</ol>`;
     return card(

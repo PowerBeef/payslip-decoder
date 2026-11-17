@@ -158,7 +158,8 @@
   };
   const earnCat = (d, ag) => own(ag, 'earn', d) || (EARN.find(([, re]) => re.test(d)) || ['other'])[0];
   const otMult = (d) => {
-    const m = d.match(/(\d+(?:[.,]\d+)?)/);
+    // the multiplier written in the label ("1.5", "2.0"), not the codes in brackets: "Temps double (01, 210)" is 2
+    const m = d.replace(/\([^)]*\)/g, ' ').match(/(\d+(?:[.,]\d+)?)/);
     const v = m ? parseFloat(m[1].replace(',', '.')) : NaN;
     return v >= 1 && v <= 3 ? v : /double/i.test(d) ? 2 : 1.5;
   };
@@ -244,9 +245,19 @@
     // the year may hold one more pay date than usual; Workday then divides by 53 (or 27): both are legitimate
     const inYear = PD.payDatesInYear(H.payDate, P === 52 ? 7 : P === 26 ? 14 : 0);
     const Ps = inYear && inYear > P ? [P, inYear] : [P];
-    const ag = opts.agreement === false ? null : PD.findAgreement(H);
+    // an agreement opened through a fallback spelling applies only if the main hourly rate is on its scale (findAgreement)
+    const pay = {
+      rows: ((sec.earnings && sec.earnings.rows) || []).map((r) => ({
+        rate: r.values && r.values.rate,
+        hours: r.values && r.values.hours,
+      })),
+      date: H.periodStart || H.payDate,
+    };
+    const ag = opts.agreement === false ? null : PD.findAgreement(H, pay);
     const A = { meta: { ...H, P, Ps, days, year, rulesDate: H.payDate || H.periodEnd || null }, gov, agreement: ag, checks: [], notes: [] };
-    const chk = (c) => A.checks.push(c);
+    // a check's title states what was checked; `close` (within a dollar) and `bad` (anything else) say how it came out
+    const chk = ({ close, bad, ...c }) =>
+      A.checks.push({ ...c, title: c.status === 'okish' && close ? close : !['ok', 'okish'].includes(c.status) && bad ? bad : c.title });
 
     /* summary columns */
     const cols = (parsed.summary && parsed.summary.columns) || [];
@@ -309,6 +320,8 @@
     const byRate = {};
     regs.forEach((e) => (byRate[e.rate] = (byRate[e.rate] || 0) + (e.hours || 0)));
     A.mainRate = +Object.keys(byRate).sort((a, b) => byRate[b] - byRate[a])[0] || null;
+    // one-off amounts (a bonus or award, back pay for an earlier period): payroll usually taxes them on their own
+    A.oneOff = curE.filter((e) => e.amount && (e.retro || ['award', 'retro'].includes(e.cat)));
 
     // YTD by category
     const cats = {};
@@ -513,7 +526,7 @@
           holi[k] = (holi[k] || 0) + e.ytdHours;
         });
       const keys = Object.keys(holi);
-      const dates = PD.holidayDates(year, ag.holidayIds).filter((d, i, arr) => d <= H.periodEnd && arr.indexOf(d) === i);
+      const dates = PD.holidaysIn(year, ag.holidayIds).filter((d) => d <= H.periodEnd);
       const totalDays = keys.reduce((s2, k) => s2 + holi[k], 0) / 8;
       if (keys.length === 2 && Number.isInteger(totalDays) && totalDays === dates.length) {
         const curKeys = new Set(A.codes.filter((c) => c.current).map((c) => c.code));
@@ -532,6 +545,10 @@
     const dY = (k) => ysum(A.deductions.filter((d) => d.kind === k));
     const eY = (k) => ysum(A.employer.filter((e) => e.kind === k));
     const capped = (v, cap) => (v == null ? null : cap ? Math.min(v, cap) : v);
+    // pensionable pay goes up to the second ceiling once a second QPP contribution is paid (T4 box 26, RL-1 box G, from 2024)
+    const qppCap = gov && gov.qpp ? (gov.qpp.mga2 && tY('qpp2') > 0 ? gov.qpp.mga2 : gov.qpp.mga) : null;
+    // since 2024 the RL-1 has box B.A for the QPP contribution and B.B for the second one; before, box B
+    const rl1Qpp = year >= 2024 ? ['B.A', 'B.B'] : ['B', null];
     const fedSubjY = tw.fedSubject ? tw.fedSubject.ytd : S.grossYtd;
     const provSubjY = tw.provSubject ? tw.provSubject.ytd : S.grossYtd;
     A.slips = {
@@ -543,7 +560,7 @@
         ['20', 'rpp', dY('pension')],
         ['22', 'fedTax', tY('fedTax')],
         ['24', 'eiInsurable', capped(S.grossYtd, gov && gov.ei && gov.ei.mie)],
-        ['26', 'qppPensionable', capped(provSubjY, gov && gov.qpp && gov.qpp.mga)],
+        ['26', 'qppPensionable', capped(provSubjY, qppCap)],
         ['44', 'union', dY('union')],
         ['46', 'donations', dY('charity')],
         ['52', 'pa', Math.round(dY('pension') + eY('erPension'))],
@@ -553,19 +570,19 @@
       ].filter(([, , v]) => v),
       rl1: [
         ['A', 'empIncome', provSubjY],
-        ['B', 'qpp', tY('qpp')],
-        ['B.A', 'qpp2', tY('qpp2')],
+        [rl1Qpp[0], 'qpp', tY('qpp')],
+        [rl1Qpp[1], 'qpp2', tY('qpp2')],
         ['C', 'ei', tY('ei')],
         ['D', 'rpp', dY('pension')],
         ['E', 'qcTax', tY('qcTax')],
         ['F', 'union', dY('union')],
-        ['G', 'qppPensionable', capped(provSubjY, gov && gov.qpp && gov.qpp.mga)],
+        ['G', 'qppPensionable', capped(provSubjY, qppCap)],
         ['H', 'qpip', tY('qpip')],
         ['I', 'qpipInsurable', capped(S.grossYtd, gov && gov.qpip && gov.qpip.mie)],
         ['J', 'employerHealth', eY('provTB')],
         ['N', 'donations', dY('charity')],
         ['235', 'healthPremiums', dY('medDent')],
-      ].filter(([, , v]) => v),
+      ].filter(([box, , v]) => box && v),
     };
 
     /* ============ CHECKS ============ */
@@ -660,6 +677,7 @@
         id: 'deposit',
         status: near(dep, S.net) ? 'ok' : 'warn',
         title: T('Net pay matches the bank deposit', 'La paie nette correspond au dépôt bancaire'),
+        bad: T('Net pay doesn’t match the bank deposit', 'La paie nette ne correspond pas au dépôt bancaire'),
         detail: (L) => `${A.payments.map((p) => `${p.bank} ${fmt(L, p.amount)}`).join(', ')}`,
       });
     }
@@ -707,6 +725,7 @@
           id: 'qpp',
           status: near(exp, q.amount, 0.02) ? 'ok' : 'warn',
           title: T(`QPP contribution matches the ${year} formula`, `La cotisation au RRQ correspond à la formule ${year}`),
+          bad: T(`QPP contribution doesn’t match the ${year} formula`, `La cotisation au RRQ ne correspond pas à la formule ${year}`),
           detail: (L) =>
             L.lang === 'fr'
               ? `(${fmt(L, pens)} − exemption ${fmt(L, gov.qpp.exempt / n)}${ex(L)}) × ${L.pct(gov.qpp.rate * 100, 2)} = ${fmt(L, exp)}; Workday : ${fmt(L, q.amount)}`
@@ -730,6 +749,10 @@
             `EI premium matches the ${year} Québec rate (${(gov.ei.rate * 100).toFixed(2)}%)`,
             `La cotisation d’AE correspond au taux québécois ${year} (${(gov.ei.rate * 100).toFixed(2).replace('.', ',')} %)`,
           ),
+          bad: T(
+            `EI premium doesn’t match the ${year} Québec rate (${(gov.ei.rate * 100).toFixed(2)}%)`,
+            `La cotisation d’AE ne correspond pas au taux québécois ${year} (${(gov.ei.rate * 100).toFixed(2).replace('.', ',')} %)`,
+          ),
           detail: (L) =>
             L.lang === 'fr'
               ? `${L.pct(gov.ei.rate * 100, 2)} × ${fmt(L, S.gross)} = ${fmt(L, exp)}; Workday : ${fmt(L, e.amount)}. Workday calcule sur le cumul annuel (${L.pct(gov.ei.rate * 100, 2)} × ${fmt(L, S.grossYtd)} = ${fmt(L, expYtd)}), d’où un écart possible de quelques cents.`
@@ -748,6 +771,10 @@
           title: T(
             `QPIP premium matches the ${year} rate (${(gov.qpip.rate * 100).toFixed(3)}%)`,
             `La cotisation au RQAP correspond au taux ${year} (${(gov.qpip.rate * 100).toFixed(3).replace('.', ',')} %)`,
+          ),
+          bad: T(
+            `QPIP premium doesn’t match the ${year} rate (${(gov.qpip.rate * 100).toFixed(3)}%)`,
+            `La cotisation au RQAP ne correspond pas au taux ${year} (${(gov.qpip.rate * 100).toFixed(3).replace('.', ',')} %)`,
           ),
           detail: (L) =>
             `${L.pct(gov.qpip.rate * 100, 3)} × ${fmt(L, S.gross)} = ${fmt(L, exp)}; Workday${L.lang === 'fr' ? ' :' : ':'} ${fmt(L, qp.amount)}`,
@@ -769,6 +796,10 @@
             `Second QPP contribution (QPP2) matches the ${year} formula`,
             `La deuxième cotisation au RRQ (RRQ2) correspond à la formule ${year}`,
           ),
+          bad: (L) =>
+            L.lang === 'fr'
+              ? `La deuxième cotisation au RRQ (RRQ2) s’écarte de ${fmt(L, Math.abs(r2(q2.amount - exp)))} de la formule ${year}`
+              : `Second QPP contribution (QPP2) differs from the ${year} formula by ${fmt(L, Math.abs(r2(q2.amount - exp)))}`,
           detail: (L) =>
             L.lang === 'fr'
               ? `4 % de la paie admissible entre ${fmt(L, gov.qpp.mga)} et ${fmt(L, gov.qpp.mga2)} dans l’année : ${fmt(L, exp)}; Workday : ${fmt(L, q2.amount)}`
@@ -843,6 +874,18 @@
       }
 
       // Income tax estimates (T4127 / TP-1015.F style annualization)
+      // a gap of more than a dollar gets a likely reason: a one-off amount taxed on its own, otherwise something to ask payroll
+      const taxGap = (L, diff) => {
+        if (Math.abs(diff) <= 1) return '';
+        const names = A.oneOff.map((e) => e.desc.replace(/\s*\([^)]*\)\s*$/, '')).filter((d, i, a) => a.indexOf(d) === i);
+        if (names.length)
+          return L.lang === 'fr'
+            ? ` Cette paie comprend un montant ponctuel (${names.join(', ')}). La paie impose habituellement un tel montant à part, plutôt que comme s’il revenait à chaque paie, ce qui explique un écart comme celui-ci.`
+            : ` This pay includes a one-off amount (${names.join(', ')}). Payroll usually taxes such an amount on its own instead of as if it came every pay, which explains a gap like this.`;
+        return L.lang === 'fr'
+          ? ` Les tables de la paie peuvent s’écarter un peu de la formule; un écart qui revient chaque semaine vaut une question à la paie.`
+          : ` Payroll’s tables can differ a little from the formula; a gap that comes back every week is worth asking payroll about.`;
+      };
       const fedT = tx('fedTax');
       const F = edition(gov.fed, H.payDate);
       // the number of pays QPP was worked out with, or whichever of the year's possible counts fits best
@@ -881,10 +924,19 @@
           id: 'fedTax',
           status: Math.abs(diff) <= 0.005 ? 'ok' : Math.abs(diff) <= 1 ? 'okish' : 'info',
           title: T(`Federal income tax matches the CRA formula for ${year}`, `L’impôt fédéral correspond à la formule ${year} de l’ARC`),
-          detail: (L) =>
+          close: T(
+            `Federal income tax is within $1 of the CRA formula for ${year}`,
+            `L’impôt fédéral est à moins de 1 $ de la formule ${year} de l’ARC`,
+          ),
+          bad: (L) =>
             L.lang === 'fr'
+              ? `L’impôt fédéral s’écarte de ${fmt(L, Math.abs(diff))} de la formule ${year} de l’ARC`
+              : `Federal income tax differs from the CRA formula for ${year} by ${fmt(L, Math.abs(diff))}`,
+          detail: (L) =>
+            (L.lang === 'fr'
               ? `Revenu annualisé ${fmt(L, Aann)} (${n} paies), montant personnel ${fmt(L, A.claims.fed)}, crédits RRQ/AE/RQAP, montant canadien pour emploi, abattement du Québec de 16,5 %${ed(L)} → ${fmt(L, est)} par paie; Workday : ${fmt(L, fedT.amount)}`
-              : `Annualized ${fmt(L, Aann)} (${n} pays), claim ${fmt(L, A.claims.fed)}, QPP/EI/QPIP credits, Canada employment amount, 16.5% Québec abatement${ed(L)} → ${fmt(L, est)} per pay; Workday: ${fmt(L, fedT.amount)}`,
+              : `Annualized ${fmt(L, Aann)} (${n} pays), claim ${fmt(L, A.claims.fed)}, QPP/EI/QPIP credits, Canada employment amount, 16.5% Québec abatement${ed(L)} → ${fmt(L, est)} per pay; Workday: ${fmt(L, fedT.amount)}`) +
+            taxGap(L, diff),
         });
       }
       const qcT = tx('qcTax');
@@ -909,10 +961,19 @@
             `Québec income tax matches the Revenu Québec formula for ${year}`,
             `L’impôt du Québec correspond à la formule ${year} de Revenu Québec`,
           ),
-          detail: (L) =>
+          close: T(
+            `Québec income tax is within $1 of the Revenu Québec formula for ${year}`,
+            `L’impôt du Québec est à moins de 1 $ de la formule ${year} de Revenu Québec`,
+          ),
+          bad: (L) =>
             L.lang === 'fr'
+              ? `L’impôt du Québec s’écarte de ${fmt(L, Math.abs(diff))} de la formule ${year} de Revenu Québec`
+              : `Québec income tax differs from the Revenu Québec formula for ${year} by ${fmt(L, Math.abs(diff))}`,
+          detail: (L) =>
+            (L.lang === 'fr'
               ? `Revenu annualisé ${fmt(L, P * tw.provTaxable.cur)} (${P} paies) − déduction pour travailleur, montant personnel ${fmt(L, A.claims.prov)} → ${fmt(L, est)} par paie; Workday : ${fmt(L, qcT.amount)}`
-              : `Annualized ${fmt(L, P * tw.provTaxable.cur)} (${P} pays) − worker deduction, claim ${fmt(L, A.claims.prov)} → ${fmt(L, est)} per pay; Workday: ${fmt(L, qcT.amount)}`,
+              : `Annualized ${fmt(L, P * tw.provTaxable.cur)} (${P} pays) − worker deduction, claim ${fmt(L, A.claims.prov)} → ${fmt(L, est)} per pay; Workday: ${fmt(L, qcT.amount)}`) +
+            taxGap(L, diff),
         });
       }
       if (nonZeroOther.length) A.notes.push('withholding-adjustments');
@@ -1132,15 +1193,15 @@
             detail: (L) => `${L.num(o.mult || 1.5)} × ${L.money(baseRate)} = ${L.money(expected)}` + PD.agText(ag, L.lang, 'otRule'),
           });
         });
-      // pension 5 %
+      // pension contributions, at the rate the pack gives (and its extra rate after some years)
       const pe = ded('pension')[0];
       if (pe) {
         const baseLines = curE.filter((x) => ['regular', 'overtime', 'vacation', 'holiday', 'sick', 'bereavement'].includes(x.cat));
         const base = sum(baseLines.map((x) => x.amount));
-        const exp5 = r2(base * ag.pension.rate),
-          exp6 = r2(base * (ag.pension.rate + ag.pension.extraAfter10y));
+        const expBase = r2(base * ag.pension.rate),
+          expExtra = r2(base * (ag.pension.rate + ag.pension.extraAfter10y));
         const er = emp('erPension')[0];
-        const ok = near(exp5, pe.amount, 0.02) || near(exp6, pe.amount, 0.02);
+        const ok = near(expBase, pe.amount, 0.02) || near(expExtra, pe.amount, 0.02);
         A.pensionBase = base;
         if (base > 0)
           chk({
@@ -1152,7 +1213,7 @@
                 ? `Régime de retraite : ${L.pct((pe.amount / base) * 100, 1)} de votre salaire de base`
                 : `Pension: ${L.pct((pe.amount / base) * 100, 1)} of your base pay`,
             detail: (L) =>
-              PD.agText(ag, L.lang, 'pension', { base: fmt(L, base), exp: fmt(L, exp5) }) +
+              PD.agText(ag, L.lang, 'pension', { base: fmt(L, base), exp: fmt(L, expBase) }) +
               (er
                 ? near(er.amount, pe.amount, 0.02)
                   ? L.lang === 'fr'
@@ -1293,6 +1354,7 @@
                     balance: vb.value,
                     accruing: va ? va.value : null,
                     likelyDollars: !!ag,
+                    dollars: !!ag && ag.vacationUnit === 'dollars', // the agreement says so: no "most likely"
                     hours: ag && A.mainRate ? r2(vb.value / A.mainRate) : null,
                   }
                 : null,
