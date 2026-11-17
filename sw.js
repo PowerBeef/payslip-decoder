@@ -1,5 +1,5 @@
 /* Offline support: the app and the PDF reader are cached on first visit. Payslips are never cached or sent anywhere. */
-const VERSION = 'pd-68a20f96b740';
+const VERSION = 'pd-0be9f96bfca8';
 const CORE = ["./","./index.html","./manifest.en.webmanifest","./manifest.fr.webmanifest","./icons/apple-touch-icon.png","./icons/favicon-32.png","./icons/icon-192.png","./icons/icon-512.png","./icons/maskable-192.png","./icons/maskable-512.png","./vendor/pdfjs-6.5.438/pdf.min.mjs","./vendor/pdfjs-6.5.438/pdf.worker.min.mjs"];
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(VERSION).then((c) => c.addAll(CORE)).then(() => self.skipWaiting()));
